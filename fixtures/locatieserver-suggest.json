@@ -1,0 +1,14 @@
+{
+  "locatieserver_suggest": {
+    "response": {
+      "docs": [
+        {
+          "id": "adr-0363200000219060",
+          "weergavenaam": "Dam 1, 1012JS Amsterdam",
+          "type": "adres",
+          "score": 18.2
+        }
+      ]
+    }
+  }
+}
