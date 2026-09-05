@@ -31,10 +31,14 @@ Keys via `API_KEYS` in `.env.local`. Rate limit: 60 req/uur per key.
 ## Scripts
 
 ```bash
-npm run seed:scholen   # sample scholen in SQLite
+npm run seed:scholen   # importeer alle DUO-scholen (bo+vo) met PDOK-geocoding (~5 min)
 npm run smoke          # 5 adressen end-to-end
 npm run calibrate      # ~50 adressen, scoreverdeling → data/calibration.json
+npm run check:wms      # controleer of RIVM/Klimaateffectatlas-lagen nog bestaan
+npm run test           # unit tests (vitest)
 ```
+
+`seed:scholen` hervat automatisch waar hij bleef; gebruik `-- --fresh` voor een schone import.
 
 ## Docker
 
@@ -46,6 +50,6 @@ docker compose up --build
 
 ## Bronnen
 
-BAG, EP-Online, WOZ-waardeloket, CBS, Politie open data, officiële bekendmakingen (SRU), RIVM, Klimaateffectatlas, DUO-scholen (sample).
+BAG, EP-Online, WOZ-waardeloket, CBS, Politie open data, officiële bekendmakingen (SRU), RIVM (GCN lucht + ALO geluid), Klimaateffectatlas, DUO-scholen (alle bo/vo-vestigingen, CC-BY 4.0).
 
 Indicatief — geen taxatie of bouwkundig advies.
