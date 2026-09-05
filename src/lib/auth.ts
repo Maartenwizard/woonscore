@@ -1,5 +1,35 @@
 import { getDb } from "./db";
 
+/**
+ * Bescherming voor interne UI-endpoints (/api/score, /api/suggest, /api/bulk):
+ * alleen fetches vanaf onze eigen frontend. Programmatische toegang loopt via
+ * /api/v1/* met een API-key.
+ */
+export function checkSameOrigin(req: {
+  headers: Headers;
+  nextUrl: { host: string };
+}): { ok: true } | { ok: false; status: number; error: string } {
+  const secFetchSite = req.headers.get("sec-fetch-site");
+  if (secFetchSite === "same-origin") return { ok: true };
+  if (secFetchSite && secFetchSite !== "none") {
+    return { ok: false, status: 403, error: "Alleen same-origin verzoeken; gebruik /api/v1 met een API-key" };
+  }
+  // Oudere browsers zonder Sec-Fetch-Site: val terug op Origin/Referer
+  const ref = req.headers.get("origin") ?? req.headers.get("referer");
+  if (ref) {
+    try {
+      if (new URL(ref).host === req.nextUrl.host) return { ok: true };
+    } catch {
+      // ongeldig origin/referer → afwijzen
+    }
+  }
+  return {
+    ok: false,
+    status: 403,
+    error: "Alleen same-origin verzoeken; gebruik /api/v1 met een API-key",
+  };
+}
+
 const WINDOW_MS = 60 * 60 * 1000;
 const MAX_PER_WINDOW = 60;
 

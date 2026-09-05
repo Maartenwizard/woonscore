@@ -1,12 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { checkApiKey } from "@/lib/auth";
+import { checkSameOrigin } from "@/lib/auth";
 import { BULK_MAX, bulkScore, parseBulkAddresses } from "@/lib/service/bulk";
 import type { ScoreProfile } from "@/lib/types";
 
+/** Interne bulk-endpoint voor de eigen frontend (geen API-key nodig). */
 export async function POST(req: NextRequest) {
-  const auth = checkApiKey(req.headers.get("x-api-key"));
-  if (!auth.ok) {
-    return NextResponse.json({ error: auth.error }, { status: auth.status });
+  const origin = checkSameOrigin(req);
+  if (!origin.ok) {
+    return NextResponse.json({ error: origin.error }, { status: origin.status });
   }
 
   let body: { addresses?: string[]; profile?: ScoreProfile };
@@ -16,16 +17,13 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const addresses = parseBulkAddresses(body.addresses);
+  const addresses = parseBulkAddresses(body.addresses).slice(0, BULK_MAX);
   if (!addresses.length) {
     return NextResponse.json({ error: "addresses required" }, { status: 400 });
-  }
-  if (addresses.length > BULK_MAX) {
-    return NextResponse.json({ error: `Max ${BULK_MAX} addresses` }, { status: 400 });
   }
 
   const profile = body.profile ?? "commercial";
   const results = await bulkScore(addresses, profile);
 
-  return NextResponse.json({ version: "v1", profile, results });
+  return NextResponse.json({ profile, results });
 }

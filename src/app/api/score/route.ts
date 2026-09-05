@@ -1,8 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
+import { checkSameOrigin } from "@/lib/auth";
 import { ReportError, reportFromQuery } from "@/lib/service/report";
 import type { ScoreProfile } from "@/lib/types";
 
 export async function GET(req: NextRequest) {
+  const origin = checkSameOrigin(req);
+  if (!origin.ok) {
+    return NextResponse.json({ error: origin.error }, { status: origin.status });
+  }
   const sp = req.nextUrl.searchParams;
   const profile = (sp.get("profile") as ScoreProfile) || "consumer";
   try {

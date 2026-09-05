@@ -50,12 +50,9 @@ export default function ZakelijkPage() {
     setBulkLoading(true);
     setBulk(null);
     try {
-      const res = await fetch("/api/v1/bulk", {
+      const res = await fetch("/api/bulk", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": "demo-key-1",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ addresses, profile: "commercial" }),
       });
       const json = await res.json();
@@ -97,8 +94,8 @@ export default function ZakelijkPage() {
         <section className="space-y-4 rounded-2xl border border-[var(--border)] bg-white/70 p-5 print:hidden">
           <h2 className="text-lg font-semibold text-[var(--ink)]">Bulk (max 20)</h2>
           <p className="text-sm text-[var(--muted)]">
-            Plak adressen gescheiden door komma of nieuwe regel. Gebruikt demo
-            API-key.
+            Plak adressen gescheiden door komma of nieuwe regel (max 20).
+            Voor grotere volumes: gebruik de API met een eigen key.
           </p>
           <textarea
             value={csv}
