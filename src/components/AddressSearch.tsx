@@ -19,11 +19,11 @@ export function AddressSearch({
   const boxRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (q.trim().length < 3) {
-      setItems([]);
-      return;
-    }
     const t = setTimeout(async () => {
+      if (q.trim().length < 3) {
+        setItems([]);
+        return;
+      }
       setLoading(true);
       try {
         const res = await fetch(`/api/suggest?q=${encodeURIComponent(q)}`);

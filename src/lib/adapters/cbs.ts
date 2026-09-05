@@ -49,7 +49,7 @@ async function fetchCbsFallback(code: string): Promise<CbsFacts | null> {
   return facts;
 }
 
-function mapCbsRow(row: Record<string, unknown>): CbsFacts {
+export function mapCbsRow(row: Record<string, unknown>): CbsFacts {
   const wozDuizend = num(row.GemiddeldeWOZWaardeVanWoningen_39);
   return {
     inwoners: num(row.AantalInwoners_5 ?? row.AantalInwoners),
