@@ -191,9 +191,11 @@ describe("applyAnchors", () => {
     expect(applyAnchors(30, anchors)).toBe(43); // midden p10-p50 → midden 30-55
   });
 
-  it("extrapoleert begrensd buiten de anchors", () => {
-    expect(applyAnchors(0, anchors)).toBe(5);
-    expect(applyAnchors(100, anchors)).toBe(100); // geclampt
+  it("mapt vloeiend naar 0/100 buiten de anchors", () => {
+    expect(applyAnchors(0, anchors)).toBe(0);
+    expect(applyAnchors(10, anchors)).toBe(15); // halverwege 0→p10 = halverwege 0→30
+    expect(applyAnchors(80, anchors)).toBe(90); // halverwege p90→100 = halverwege 80→100
+    expect(applyAnchors(100, anchors)).toBe(100);
   });
 
   it("laat scores ongemoeid bij ongeldige spreiding", () => {

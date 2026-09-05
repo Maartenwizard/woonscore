@@ -38,7 +38,6 @@ yarn-error.log*
 # local data
 /data/*.db
 /data/*.db-*
-/data/calibration.json
 
 # vercel
 .vercel

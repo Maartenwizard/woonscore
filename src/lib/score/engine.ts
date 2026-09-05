@@ -237,7 +237,8 @@ function scoreVoorzieningen(facts: PropertyFacts): PartialScore {
   const parts: number[] = [];
   if (facts.schools) {
     const n = facts.schools.binnen1km;
-    parts.push(clamp(40 + n * 12));
+    // Met de volledige DUO-set zijn 3+ scholen binnen 1 km normaal; vlakkere curve
+    parts.push(clamp(30 + Math.min(n, 12) * 5, 30, 90));
     details.push(`${n} scholen binnen 1 km`);
   }
   const cbs = facts.cbs;
