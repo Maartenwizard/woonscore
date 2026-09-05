@@ -96,7 +96,7 @@ function scoreWaarde(facts: PropertyFacts): PartialScore {
     details.push(`WOZ €${facts.woz.actueleWaarde.toLocaleString("nl-NL")}`);
   } else if (facts.cbs?.gemiddeldeWoz) {
     details.push(
-      `Gem. WOZ buurt €${facts.cbs.gemiddeldeWoz.toLocaleString("nl-NL")}`,
+      `Gem. WOZ buurt €${facts.cbs.gemiddeldeWoz.toLocaleString("nl-NL")} (fallback: CBS-buurtgemiddelde, geen WOZ-data voor dit object)`,
     );
     // Buurtgemiddelde alleen: neutrale score zonder trend
     score = 55;
