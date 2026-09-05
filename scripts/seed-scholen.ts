@@ -1,6 +1,11 @@
 /**
- * Seed a sample of Dutch schools into SQLite for "scholen binnen 1 km".
- * For production, replace with a full DUO CSV import.
+ * Importeer alle school-vestigingen (basisonderwijs + voortgezet onderwijs)
+ * uit de officiële DUO open-databestanden en geocodeer ze via PDOK
+ * Locatieserver (postcode + huisnummer).
+ *
+ * Bron (CC-BY 4.0): https://onderwijsdata.duo.nl
+ * Run: npm run seed:scholen          (hervat waar hij was gebleven)
+ *      npm run seed:scholen -- --fresh   (verwijder bestaande scholen en importeer opnieuw)
  */
 import Database from "better-sqlite3";
 import fs from "node:fs";
@@ -9,55 +14,258 @@ import path from "node:path";
 const DATA_DIR = path.join(process.cwd(), "data");
 const DB_PATH = path.join(DATA_DIR, "woonscore.db");
 
-const SAMPLE: Array<{ naam: string; postcode: string; plaats: string; lat: number; lon: number }> = [
-  { naam: "OBS De 9 Straatjes", postcode: "1016GJ", plaats: "Amsterdam", lat: 52.3708, lon: 4.8855 },
-  { naam: "Basisschool Annie M.G. Schmidt", postcode: "1018VN", plaats: "Amsterdam", lat: 52.3652, lon: 4.9147 },
-  { naam: "Montessori School Amsterdam", postcode: "1075AV", plaats: "Amsterdam", lat: 52.3515, lon: 4.859 },
-  { naam: "Daltonschool Neptunus", postcode: "1056LN", plaats: "Amsterdam", lat: 52.372, lon: 4.847 },
-  { naam: "OBS De Pijler", postcode: "3021HB", plaats: "Rotterdam", lat: 51.923, lon: 4.462 },
-  { naam: "CBS De Regenboog", postcode: "3011TA", plaats: "Rotterdam", lat: 51.9225, lon: 4.4793 },
-  { naam: "OBS Coolhaven", postcode: "3024EA", plaats: "Rotterdam", lat: 51.9105, lon: 4.453 },
-  { naam: "Basisschool De Fontein", postcode: "2511CB", plaats: "Den Haag", lat: 52.0786, lon: 4.3113 },
-  { naam: "OBS De Vlieger", postcode: "2517KK", plaats: "Den Haag", lat: 52.084, lon: 4.285 },
-  { naam: "Jenaplanschool Utrecht", postcode: "3512JE", plaats: "Utrecht", lat: 52.0935, lon: 5.119 },
-  { naam: "OBS De Klimop", postcode: "3532AD", plaats: "Utrecht", lat: 52.089, lon: 5.095 },
-  { naam: "Basisschool Sint Jan", postcode: "5611ZW", plaats: "Eindhoven", lat: 51.4416, lon: 5.4697 },
-  { naam: "OBS De Horizon", postcode: "9712CN", plaats: "Groningen", lat: 53.2194, lon: 6.5665 },
-  { naam: "Basisschool De Brug", postcode: "6211AA", plaats: "Maastricht", lat: 50.8514, lon: 5.691 },
-  { naam: "OBS Het Anker", postcode: "6811KG", plaats: "Arnhem", lat: 51.9851, lon: 5.8987 },
-  { naam: "CBS De Regenboog Haarlem", postcode: "2011AA", plaats: "Haarlem", lat: 52.3874, lon: 4.6462 },
-  { naam: "OBS De Notenkraker", postcode: "3511AA", plaats: "Utrecht", lat: 52.0907, lon: 5.1214 },
-  { naam: "Basisschool Westerpark", postcode: "1051AA", plaats: "Amsterdam", lat: 52.386, lon: 4.872 },
-  { naam: "OBS Oostpoort", postcode: "1093AA", plaats: "Amsterdam", lat: 52.358, lon: 4.928 },
-  { naam: "Dalton De Rank", postcode: "3031AA", plaats: "Rotterdam", lat: 51.93, lon: 4.49 },
+const DUO_SOURCES: Array<{ type: "bo" | "vo"; url: string }> = [
+  {
+    type: "bo",
+    url: "https://onderwijsdata.duo.nl/dataset/786f12ea-6224-42fd-ab72-de4d7d879535/resource/dcc9c9a5-6d01-410b-967f-810557588ba4/download/vestigingenbo.csv",
+  },
+  {
+    type: "vo",
+    url: "https://onderwijsdata.duo.nl/dataset/c8e6ffdd-cc2b-44ee-880f-0ff03f72e868/resource/5187f8d5-ff9c-4284-8e06-4311f0354956/download/vestigingenvo.csv",
+  },
 ];
 
-fs.mkdirSync(DATA_DIR, { recursive: true });
-const db = new Database(DB_PATH);
-db.exec(`
-  CREATE TABLE IF NOT EXISTS scholen (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    naam TEXT NOT NULL,
-    postcode TEXT,
-    plaats TEXT,
-    lat REAL NOT NULL,
-    lon REAL NOT NULL
-  );
-`);
+const PDOK_FREE = "https://api.pdok.nl/bzk/locatieserver/search/v3_1/free";
+const GEOCODE_CONCURRENCY = 8;
 
-const count = (db.prepare(`SELECT COUNT(*) as c FROM scholen`).get() as { c: number }).c;
-if (count > 0) {
-  console.log(`scholen tabel heeft al ${count} rijen — skip seed (verwijder data/woonscore.db om opnieuw te seeden)`);
-  process.exit(0);
+interface Vestiging {
+  vestigingscode: string;
+  naam: string;
+  postcode: string;
+  huisnummer: string;
+  plaats: string;
+  denominatie: string;
+  type: "bo" | "vo";
 }
 
-const insert = db.prepare(
-  `INSERT INTO scholen (naam, postcode, plaats, lat, lon) VALUES (?, ?, ?, ?, ?)`,
-);
-const tx = db.transaction(() => {
-  for (const s of SAMPLE) {
-    insert.run(s.naam, s.postcode, s.plaats, s.lat, s.lon);
+/** Minimale CSV-parser met quote-ondersteuning (DUO gebruikt komma + quotes). */
+function parseCsv(text: string): string[][] {
+  const rows: string[][] = [];
+  let row: string[] = [];
+  let field = "";
+  let inQuotes = false;
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (inQuotes) {
+      if (c === '"') {
+        if (text[i + 1] === '"') {
+          field += '"';
+          i++;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        field += c;
+      }
+    } else if (c === '"') {
+      inQuotes = true;
+    } else if (c === ",") {
+      row.push(field);
+      field = "";
+    } else if (c === "\n" || c === "\r") {
+      if (c === "\r" && text[i + 1] === "\n") i++;
+      row.push(field);
+      field = "";
+      if (row.length > 1 || row[0] !== "") rows.push(row);
+      row = [];
+    } else {
+      field += c;
+    }
   }
+  if (field || row.length) {
+    row.push(field);
+    rows.push(row);
+  }
+  return rows;
+}
+
+async function downloadVestigingen(): Promise<Vestiging[]> {
+  const all: Vestiging[] = [];
+  for (const src of DUO_SOURCES) {
+    process.stdout.write(`Downloaden ${src.type.toUpperCase()} … `);
+    const res = await fetch(src.url, {
+      headers: { "User-Agent": "Woonscore/0.1 (seed-scholen)" },
+      signal: AbortSignal.timeout(120000),
+    });
+    if (!res.ok) throw new Error(`DUO ${src.type} download: HTTP ${res.status}`);
+    const rows = parseCsv(await res.text());
+    const header = rows[0].map((h) => h.trim().toUpperCase());
+    const idx = (name: string) => header.indexOf(name);
+    const iCode = idx("VESTIGINGSCODE");
+    const iNaam = idx("VESTIGINGSNAAM");
+    const iPostcode = idx("POSTCODE");
+    const iHuisnr = idx("HUISNUMMER-TOEVOEGING");
+    const iPlaats = idx("PLAATSNAAM");
+    const iDenominatie = idx("DENOMINATIE");
+    if ([iCode, iNaam, iPostcode, iHuisnr].some((i) => i < 0)) {
+      throw new Error(`DUO ${src.type}: onverwachte CSV-kolommen: ${header.join(", ")}`);
+    }
+    let count = 0;
+    for (const row of rows.slice(1)) {
+      const postcode = (row[iPostcode] ?? "").replace(/\s/g, "").toUpperCase();
+      const huisnummer = /^\d+/.exec((row[iHuisnr] ?? "").trim())?.[0] ?? "";
+      const naam = (row[iNaam] ?? "").trim();
+      const code = (row[iCode] ?? "").trim();
+      if (!postcode || !huisnummer || !naam || !code) continue;
+      all.push({
+        vestigingscode: code,
+        naam,
+        postcode,
+        huisnummer,
+        plaats: (row[iPlaats] ?? "").trim(),
+        denominatie: (row[iDenominatie] ?? "").trim(),
+        type: src.type,
+      });
+      count++;
+    }
+    console.log(`${count} vestigingen`);
+  }
+  return all;
+}
+
+async function geocode(
+  postcode: string,
+  huisnummer: string,
+): Promise<{ lat: number; lon: number } | null> {
+  const q = `postcode:${postcode} and huisnummer:${huisnummer}`;
+  const url = `${PDOK_FREE}?q=${encodeURIComponent(q)}&fq=type:adres&rows=1&fl=centroide_ll`;
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Woonscore/0.1 (seed-scholen)" },
+        signal: AbortSignal.timeout(10000),
+      });
+      if (res.status === 429) {
+        await sleep(2000 * (attempt + 1));
+        continue;
+      }
+      if (!res.ok) return null;
+      const json = (await res.json()) as {
+        response?: { docs?: Array<{ centroide_ll?: string }> };
+      };
+      const point = json.response?.docs?.[0]?.centroide_ll;
+      const m = point ? /POINT\(([\d.-]+) ([\d.-]+)\)/.exec(point) : null;
+      if (!m) return null;
+      return { lon: Number(m[1]), lat: Number(m[2]) };
+    } catch {
+      await sleep(500 * (attempt + 1));
+    }
+  }
+  return null;
+}
+
+function sleep(ms: number) {
+  return new Promise((r) => setTimeout(r, ms));
+}
+
+function openDb(): Database.Database {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  const db = new Database(DB_PATH);
+  db.pragma("journal_mode = WAL");
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS scholen (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      naam TEXT NOT NULL,
+      postcode TEXT,
+      plaats TEXT,
+      lat REAL NOT NULL,
+      lon REAL NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_scholen_latlon ON scholen(lat, lon);
+  `);
+  // Migratie: kolommen voor DUO-import
+  const cols = new Set(
+    (db.prepare(`PRAGMA table_info(scholen)`).all() as Array<{ name: string }>).map(
+      (c) => c.name,
+    ),
+  );
+  if (!cols.has("vestigingscode")) db.exec(`ALTER TABLE scholen ADD COLUMN vestigingscode TEXT`);
+  if (!cols.has("type")) db.exec(`ALTER TABLE scholen ADD COLUMN type TEXT`);
+  if (!cols.has("denominatie")) db.exec(`ALTER TABLE scholen ADD COLUMN denominatie TEXT`);
+  db.exec(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_scholen_vestigingscode ON scholen(vestigingscode)`,
+  );
+  return db;
+}
+
+async function main() {
+  const fresh = process.argv.includes("--fresh");
+  const db = openDb();
+
+  if (fresh) {
+    db.exec(`DELETE FROM scholen`);
+    console.log("Bestaande scholen verwijderd (--fresh)");
+  } else {
+    // Sample-rijen van de oude seed (zonder vestigingscode) opruimen
+    db.exec(`DELETE FROM scholen WHERE vestigingscode IS NULL`);
+  }
+
+  const existing = new Set(
+    (
+      db.prepare(`SELECT vestigingscode FROM scholen WHERE vestigingscode IS NOT NULL`).all() as Array<{
+        vestigingscode: string;
+      }>
+    ).map((r) => r.vestigingscode),
+  );
+
+  const vestigingen = (await downloadVestigingen()).filter(
+    (v) => !existing.has(v.vestigingscode),
+  );
+  if (!vestigingen.length) {
+    console.log(`Niets te doen — ${existing.size} scholen al aanwezig.`);
+    return;
+  }
+  console.log(
+    `Te geocoderen: ${vestigingen.length} vestigingen (al aanwezig: ${existing.size}) …`,
+  );
+
+  const insert = db.prepare(
+    `INSERT INTO scholen (naam, postcode, plaats, lat, lon, vestigingscode, type, denominatie)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+     ON CONFLICT(vestigingscode) DO UPDATE SET
+       naam = excluded.naam, postcode = excluded.postcode, plaats = excluded.plaats,
+       lat = excluded.lat, lon = excluded.lon, type = excluded.type,
+       denominatie = excluded.denominatie`,
+  );
+
+  let done = 0;
+  let missed = 0;
+  let cursor = 0;
+
+  async function worker() {
+    while (cursor < vestigingen.length) {
+      const v = vestigingen[cursor++];
+      const point = await geocode(v.postcode, v.huisnummer);
+      if (point) {
+        insert.run(
+          v.naam,
+          v.postcode,
+          v.plaats,
+          point.lat,
+          point.lon,
+          v.vestigingscode,
+          v.type,
+          v.denominatie,
+        );
+      } else {
+        missed++;
+      }
+      done++;
+      if (done % 250 === 0) {
+        console.log(`  ${done}/${vestigingen.length} (geocode-miss: ${missed})`);
+      }
+    }
+  }
+
+  await Promise.all(Array.from({ length: GEOCODE_CONCURRENCY }, () => worker()));
+
+  const total = (db.prepare(`SELECT COUNT(*) as c FROM scholen`).get() as { c: number }).c;
+  console.log(
+    `Klaar: ${done - missed} geïmporteerd, ${missed} zonder geocode. Totaal in database: ${total} scholen.`,
+  );
+}
+
+main().catch((e) => {
+  console.error(e);
+  process.exit(1);
 });
-tx();
-console.log(`Geïmporteerd: ${SAMPLE.length} scholen (sample). Vervang later door DUO CSV.`);

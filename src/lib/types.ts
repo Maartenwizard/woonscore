@@ -117,10 +117,14 @@ export interface ClimateFacts {
 export interface SchoolNearby {
   naam: string;
   afstandM: number;
+  /** bo = basisonderwijs, vo = voortgezet onderwijs */
+  type?: "bo" | "vo";
 }
 
 export interface SchoolsFacts {
   binnen1km: number;
+  basisscholenBinnen1km?: number;
+  middelbareScholenBinnen1km?: number;
   scholen: SchoolNearby[];
 }
 

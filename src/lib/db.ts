@@ -39,7 +39,10 @@ export function getDb(): Database.Database {
       postcode TEXT,
       plaats TEXT,
       lat REAL NOT NULL,
-      lon REAL NOT NULL
+      lon REAL NOT NULL,
+      vestigingscode TEXT,
+      type TEXT,
+      denominatie TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_scholen_latlon ON scholen(lat, lon);
 
@@ -56,5 +59,21 @@ export function getDb(): Database.Database {
       count INTEGER NOT NULL
     );
   `);
+  migrateScholen(db);
   return db;
+}
+
+/** Bestaande databases van vóór de DUO-import missen deze kolommen. */
+function migrateScholen(db: Database.Database) {
+  const cols = new Set(
+    (db.prepare(`PRAGMA table_info(scholen)`).all() as Array<{ name: string }>).map(
+      (c) => c.name,
+    ),
+  );
+  if (!cols.has("vestigingscode")) db.exec(`ALTER TABLE scholen ADD COLUMN vestigingscode TEXT`);
+  if (!cols.has("type")) db.exec(`ALTER TABLE scholen ADD COLUMN type TEXT`);
+  if (!cols.has("denominatie")) db.exec(`ALTER TABLE scholen ADD COLUMN denominatie TEXT`);
+  db.exec(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_scholen_vestigingscode ON scholen(vestigingscode)`,
+  );
 }
