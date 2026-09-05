@@ -7,6 +7,7 @@ import type {
   ScoreProfile,
   ScoreResult,
 } from "@/lib/types";
+import { applyAnchors, loadCalibration, type CalibrationData } from "./calibration";
 
 export const DISCLAIMER =
   "Indicatief op basis van openbare data met peildatum per bron. Geen taxatie, bouwkundig advies of juridisch advies.";
@@ -19,6 +20,26 @@ const CONSUMER_WEIGHTS: Record<PartialScoreKey, number> = {
   klimaat: 0.15,
   voorzieningen: 0.1,
   buurt: 0.1,
+};
+
+/**
+ * Zakelijk profiel: zwaarder op waardeontwikkeling, klimaat-/funderingsrisico
+ * en buurtdynamiek (vergunningen); lichter op voorzieningen en dagelijkse
+ * leefkwaliteit.
+ */
+const COMMERCIAL_WEIGHTS: Record<PartialScoreKey, number> = {
+  woning: 0.15,
+  waarde: 0.2,
+  veiligheid: 0.1,
+  milieu: 0.1,
+  klimaat: 0.2,
+  voorzieningen: 0.05,
+  buurt: 0.2,
+};
+
+const WEIGHTS: Record<ScoreProfile, Record<PartialScoreKey, number>> = {
+  consumer: CONSUMER_WEIGHTS,
+  commercial: COMMERCIAL_WEIGHTS,
 };
 
 const LABELS: Record<PartialScoreKey, string> = {
@@ -501,7 +522,11 @@ function buildRisks(facts: PropertyFacts): RiskItem[] {
   return risks;
 }
 
-export function computeScore(facts: PropertyFacts, profile: ScoreProfile): ScoreResult {
+export function computeScore(
+  facts: PropertyFacts,
+  profile: ScoreProfile,
+  calibration: CalibrationData | null | undefined = undefined,
+): ScoreResult {
   const partials: PartialScore[] = [
     scoreWoning(facts),
     scoreWaarde(facts),
@@ -511,6 +536,23 @@ export function computeScore(facts: PropertyFacts, profile: ScoreProfile): Score
     scoreVoorzieningen(facts),
     scoreBuurt(facts),
   ];
+
+  // Gewichten per profiel (pijlerfuncties rekenen profielonafhankelijk)
+  for (const p of partials) {
+    p.weight = WEIGHTS[profile][p.key];
+  }
+
+  // Kalibratie: map ruwe pijlerscores door landelijke percentiel-anchors
+  const cal = calibration === undefined ? loadCalibration() : calibration;
+  if (cal?.pillars) {
+    for (const p of partials) {
+      const anchors = cal.pillars[p.key];
+      if (p.score != null && anchors) {
+        p.raw = p.score;
+        p.score = applyAnchors(p.score, anchors);
+      }
+    }
+  }
 
   const { positives, negatives } = bullets(facts, partials);
   const total = weightedTotal(partials);

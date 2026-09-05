@@ -155,6 +155,8 @@ export interface PartialScore {
   key: PartialScoreKey;
   label: string;
   score: number | null;
+  /** Ongekalibreerde score (alleen gezet als kalibratie is toegepast) */
+  raw?: number;
   weight: number;
   benchmark?: number;
   details: string[];
