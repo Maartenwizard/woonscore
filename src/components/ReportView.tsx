@@ -62,13 +62,23 @@ export function ReportView({
               Deelbare link
             </Link>
             {mode === "commercial" && (
-              <button
-                type="button"
-                onClick={() => window.print()}
-                className="text-sm text-[var(--accent)] underline-offset-2 hover:underline print:hidden"
-              >
-                PDF / printen
-              </button>
+              <>
+                <a
+                  href={`/api/report/pdf?nummeraanduiding=${encodeURIComponent(a.nummeraanduidingId)}&profile=commercial`}
+                  target="_blank"
+                  rel="noopener"
+                  className="text-sm text-[var(--accent)] underline-offset-2 hover:underline print:hidden"
+                >
+                  Download PDF
+                </a>
+                <button
+                  type="button"
+                  onClick={() => window.print()}
+                  className="text-sm text-[var(--accent)] underline-offset-2 hover:underline print:hidden"
+                >
+                  Printen
+                </button>
+              </>
             )}
           </div>
         </div>

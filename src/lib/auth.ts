@@ -5,12 +5,19 @@ import { getDb } from "./db";
  * alleen fetches vanaf onze eigen frontend. Programmatische toegang loopt via
  * /api/v1/* met een API-key.
  */
-export function checkSameOrigin(req: {
-  headers: Headers;
-  nextUrl: { host: string };
-}): { ok: true } | { ok: false; status: number; error: string } {
+export function checkSameOrigin(
+  req: {
+    headers: Headers;
+    nextUrl: { host: string };
+  },
+  opts?: {
+    /** Sta directe navigatie toe (adresbalk/bookmark), bv. voor PDF-downloads. */
+    allowNavigation?: boolean;
+  },
+): { ok: true } | { ok: false; status: number; error: string } {
   const secFetchSite = req.headers.get("sec-fetch-site");
   if (secFetchSite === "same-origin") return { ok: true };
+  if (secFetchSite === "none" && opts?.allowNavigation) return { ok: true };
   if (secFetchSite && secFetchSite !== "none") {
     return { ok: false, status: 403, error: "Alleen same-origin verzoeken; gebruik /api/v1 met een API-key" };
   }
