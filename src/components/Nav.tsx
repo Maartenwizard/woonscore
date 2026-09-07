@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { AuthButtons } from "./AuthButtons";
 
 export function Nav({
   active,
 }: {
-  active?: "home" | "vergelijk" | "zakelijk" | "docs" | "status";
+  active?: "home" | "vergelijk" | "zakelijk" | "docs" | "status" | "prijzen" | "account";
 }) {
   const link = (href: string, id: typeof active, label: string) => (
     <Link
@@ -23,8 +24,10 @@ export function Nav({
         {link("/", "home", "Consument")}
         {link("/vergelijk", "vergelijk", "Vergelijk")}
         {link("/zakelijk", "zakelijk", "Zakelijk")}
+        {link("/prijzen", "prijzen", "Prijzen")}
         {link("/docs", "docs", "API")}
         {link("/status", "status", "Status")}
+        <AuthButtons />
       </nav>
     </header>
   );

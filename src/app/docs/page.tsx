@@ -8,8 +8,10 @@ export default function DocsPage() {
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">API docs</h1>
           <p className="mt-2 text-[var(--muted)]">
-            Publieke REST API v1. Auth via header <code>X-API-Key</code>. Demo
-            keys: <code>demo-key-1</code>, <code>demo-key-2</code> (60 req/uur).
+            Publieke REST API v1. Auth via header <code>X-API-Key</code>. Maak
+            een eigen key op <a className="underline" href="/account">/account</a>{" "}
+            (gratis: 50 rapporten/maand, 60 req/uur, bulk 5). Omgevingskeys zoals{" "}
+            <code>demo-key-1</code> blijven werken voor lokale tests.
           </p>
         </div>
 
@@ -31,11 +33,11 @@ export default function DocsPage() {
         <Endpoint
           method="POST"
           path="/api/v1/bulk"
-          desc='Body: { "addresses": ["Dam 1 Amsterdam", "..."], "profile": "commercial" } (max 20).'
+          desc='Body: { "addresses": ["Dam 1 Amsterdam", "..."], "profile": "commercial" }. Bulk-max hangt af van je plan (gratis 5, zakelijk 20).'
         />
 
         <pre className="overflow-x-auto rounded-xl bg-[var(--ink)] p-4 text-sm text-white">
-{`curl -H "X-API-Key: demo-key-1" \\
+{`curl -H "X-API-Key: ws_jouw_key" \\
   "http://localhost:3000/api/v1/score?address=Dam%201%20Amsterdam"`}
         </pre>
 

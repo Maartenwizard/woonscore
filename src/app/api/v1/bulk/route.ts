@@ -20,8 +20,9 @@ export async function POST(req: NextRequest) {
   if (!addresses.length) {
     return NextResponse.json({ error: "addresses required" }, { status: 400 });
   }
-  if (addresses.length > BULK_MAX) {
-    return NextResponse.json({ error: `Max ${BULK_MAX} addresses` }, { status: 400 });
+  const max = auth.bulkMax ?? BULK_MAX;
+  if (addresses.length > max) {
+    return NextResponse.json({ error: `Max ${max} addresses` }, { status: 400 });
   }
 
   const profile = body.profile ?? "commercial";

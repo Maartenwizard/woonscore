@@ -66,6 +66,33 @@ export function getDb(): Database.Database {
       created_at INTEGER NOT NULL,
       PRIMARY KEY (nummeraanduiding_id, date)
     );
+
+    CREATE TABLE IF NOT EXISTS users (
+      clerk_id TEXT PRIMARY KEY,
+      stripe_customer_id TEXT,
+      plan TEXT NOT NULL DEFAULT 'free',
+      extra_credits INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS user_api_keys (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clerk_id TEXT NOT NULL,
+      prefix TEXT NOT NULL,
+      hash TEXT NOT NULL UNIQUE,
+      name TEXT,
+      created_at INTEGER NOT NULL,
+      last_used_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_keys_clerk ON user_api_keys(clerk_id);
+
+    CREATE TABLE IF NOT EXISTS usage_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clerk_id TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_usage_clerk_time ON usage_events(clerk_id, created_at);
   `);
   migrateScholen(db);
   return db;
