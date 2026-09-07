@@ -5,6 +5,7 @@ import type { FullReport } from "@/lib/types";
 import { Disclaimer } from "./Nav";
 import { PosNegList } from "./PosNegList";
 import { PropertyMap } from "./PropertyMap";
+import { ReportChat } from "./ReportChat";
 import { RiskChecklist } from "./RiskChecklist";
 import { ScoreBars } from "./ScoreBars";
 import { ScoreRing } from "./ScoreRing";
@@ -22,13 +23,19 @@ export function ReportView({
   const chips = [
     facts.bag?.bouwjaar ? `Bouwjaar ${facts.bag.bouwjaar}` : null,
     facts.bag?.oppervlakte ? `${facts.bag.oppervlakte} m²` : null,
+    facts.perceel?.grootteM2
+      ? `Perceel ${facts.perceel.grootteM2.toLocaleString("nl-NL")} m²`
+      : null,
     facts.energy?.labelklasse ? `Label ${facts.energy.labelklasse}` : null,
+    facts.monument?.isRijksmonument ? "Rijksmonument" : null,
     facts.woz?.actueleWaarde
       ? `WOZ €${facts.woz.actueleWaarde.toLocaleString("nl-NL")}`
       : facts.cbs?.gemiddeldeWoz
         ? `Gem. WOZ buurt €${facts.cbs.gemiddeldeWoz.toLocaleString("nl-NL")}`
         : null,
   ].filter(Boolean) as string[];
+
+  const history = (report.history ?? []).filter((h) => h.total != null);
 
   return (
     <div className="space-y-10 print:space-y-6">
@@ -99,6 +106,26 @@ export function ReportView({
         <h2 className="text-lg font-semibold text-[var(--ink)]">Deelscores</h2>
         <ScoreBars partials={score.partials} />
       </section>
+
+      {history.length >= 2 && (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold text-[var(--ink)]">Scoreverloop</h2>
+          <div className="flex flex-wrap items-end gap-3 rounded-xl border border-[var(--border)] bg-white p-4">
+            {history.map((h) => (
+              <div key={h.date} className="flex flex-col items-center gap-1">
+                <span className="text-sm font-semibold text-[var(--ink)]">{h.total}</span>
+                <div
+                  className="w-8 rounded-t bg-[var(--accent)]/80"
+                  style={{ height: `${Math.max(6, (h.total ?? 0) * 0.8)}px` }}
+                />
+                <span className="text-xs text-[var(--muted)]">{h.date.slice(5)}</span>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      <ReportChat nummeraanduidingId={a.nummeraanduidingId} />
 
       {mode === "commercial" && (
         <section className="space-y-3">

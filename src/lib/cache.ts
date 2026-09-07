@@ -12,6 +12,8 @@ export const TTL = {
   scholen: 30 * 24 * 60 * 60,
   geocode: 7 * 24 * 60 * 60,
   report: 24 * 60 * 60,
+  perceel: 30 * 24 * 60 * 60,
+  monument: 30 * 24 * 60 * 60,
 } as const;
 
 export function cacheGet<T>(key: string): T | null {
@@ -100,6 +102,34 @@ export function saveReport(nummeraanduidingId: string, weergavenaam: string, pay
          updated_at = excluded.updated_at`,
     )
     .run(nummeraanduidingId, weergavenaam, JSON.stringify(payload), Date.now());
+}
+
+/** Bewaar één scorepunt per adres per dag voor het scoreverloop. */
+export function saveReportHistory(nummeraanduidingId: string, total: number | null) {
+  const date = new Date().toISOString().slice(0, 10);
+  getDb()
+    .prepare(
+      `INSERT INTO report_history (nummeraanduiding_id, date, total, created_at)
+       VALUES (?, ?, ?, ?)
+       ON CONFLICT(nummeraanduiding_id, date) DO UPDATE SET
+         total = excluded.total,
+         created_at = excluded.created_at`,
+    )
+    .run(nummeraanduidingId, date, total, Date.now());
+}
+
+export function loadReportHistory(
+  nummeraanduidingId: string,
+  limit = 30,
+): Array<{ date: string; total: number | null }> {
+  return getDb()
+    .prepare(
+      `SELECT date, total FROM report_history
+       WHERE nummeraanduiding_id = ?
+       ORDER BY date DESC LIMIT ?`,
+    )
+    .all(nummeraanduidingId, limit)
+    .reverse() as Array<{ date: string; total: number | null }>;
 }
 
 export function loadReport(nummeraanduidingId: string) {

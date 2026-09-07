@@ -8,11 +8,13 @@ import {
   resolveFreeText,
   suggestAddresses,
 } from "@/lib/adapters/locatieserver";
+import { monumentAdapter } from "@/lib/adapters/monument";
+import { perceelAdapter } from "@/lib/adapters/perceel";
 import { enrichCrimeWithPopulation, politieAdapter } from "@/lib/adapters/politie";
 import { rivmAdapter } from "@/lib/adapters/rivm";
 import { scholenAdapter } from "@/lib/adapters/scholen";
 import { wozAdapter } from "@/lib/adapters/woz";
-import { saveReport } from "@/lib/cache";
+import { loadReportHistory, saveReport, saveReportHistory } from "@/lib/cache";
 import { maybeSummarize } from "@/lib/llm";
 import { computeScore } from "@/lib/score/engine";
 import type {
@@ -39,6 +41,8 @@ export async function buildReport(
     rivmAdapter(address),
     klimaatAdapter(address),
     scholenAdapter(address),
+    perceelAdapter(address),
+    monumentAdapter(address),
   ]);
 
   const sources: SourceMeta[] = [];
@@ -66,6 +70,8 @@ export async function buildReport(
   const environment = pick<PropertyFacts["environment"]>(6);
   const climate = pick<PropertyFacts["climate"]>(7);
   const schools = pick<PropertyFacts["schools"]>(8);
+  const perceel = pick<PropertyFacts["perceel"]>(9);
+  const monument = pick<PropertyFacts["monument"]>(10);
 
   crime = enrichCrimeWithPopulation(crime ?? null, cbs?.inwoners);
 
@@ -86,6 +92,8 @@ export async function buildReport(
     environment: environment ?? undefined,
     climate: climate ?? undefined,
     schools: schools ?? undefined,
+    perceel: perceel ?? undefined,
+    monument: monument ?? undefined,
     sources,
   };
 
@@ -93,10 +101,14 @@ export async function buildReport(
   const narrative = await maybeSummarize(facts, score);
   if (narrative) score = { ...score, summary: narrative };
 
+  saveReportHistory(address.nummeraanduidingId, score.total);
+  const history = loadReportHistory(address.nummeraanduidingId);
+
   const report: FullReport = {
     facts,
     score,
     generatedAt: new Date().toISOString(),
+    history: history.length ? history : undefined,
   };
 
   saveReport(address.nummeraanduidingId, address.weergavenaam, report);

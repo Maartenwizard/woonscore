@@ -105,7 +105,27 @@ export interface BekendmakingenFacts {
 export interface EnvironmentFacts {
   no2?: number;
   pm25?: number;
+  /** Lden alle bronnen gecombineerd (dB) */
   geluidLden?: number;
+  geluidWegLden?: number;
+  geluidSpoorLden?: number;
+  geluidVliegLden?: number;
+}
+
+export interface PerceelFacts {
+  /** Bijv. "Amsterdam F 6685" */
+  kadastraleAanduiding: string;
+  grootteM2?: number;
+}
+
+export interface MonumentFacts {
+  /** Indicatie o.b.v. rijksmonumentpunten binnen ~15 m van het adres */
+  isRijksmonument: boolean;
+  rijksmonumentNummer?: number;
+  categorie?: string;
+  monumentUrl?: string;
+  /** Monumentdichtheid rond het adres (binnen ~75 m), bv. beschermd stadsgezicht-indicatie */
+  aantalBinnen75m: number;
 }
 
 export interface ClimateFacts {
@@ -139,6 +159,8 @@ export interface PropertyFacts {
   environment?: EnvironmentFacts;
   climate?: ClimateFacts;
   schools?: SchoolsFacts;
+  perceel?: PerceelFacts;
+  monument?: MonumentFacts;
   sources: SourceMeta[];
 }
 
@@ -188,10 +210,17 @@ export interface ScoreResult {
   disclaimer: string;
 }
 
+export interface ScoreHistoryPoint {
+  date: string;
+  total: number | null;
+}
+
 export interface FullReport {
   facts: PropertyFacts;
   score: ScoreResult;
   generatedAt: string;
+  /** Scoreverloop over eerdere rapportages (max 30 punten) */
+  history?: ScoreHistoryPoint[];
 }
 
 export interface SuggestItem {

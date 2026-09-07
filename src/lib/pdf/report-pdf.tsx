@@ -80,6 +80,20 @@ export function ReportPdf({ report }: { report: FullReport }) {
     ["Oppervlakte", facts.bag?.oppervlakte ? `${facts.bag.oppervlakte} m²` : "—"],
     ["Energielabel", facts.energy?.labelklasse ?? "—"],
     [
+      "Perceel",
+      facts.perceel
+        ? `${facts.perceel.kadastraleAanduiding}${facts.perceel.grootteM2 ? ` — ${facts.perceel.grootteM2.toLocaleString("nl-NL")} m²` : ""}`
+        : "—",
+    ],
+    [
+      "Monumentstatus",
+      facts.monument
+        ? facts.monument.isRijksmonument
+          ? `Rijksmonument${facts.monument.rijksmonumentNummer ? ` nr. ${facts.monument.rijksmonumentNummer}` : ""}`
+          : "Geen rijksmonument (indicatie)"
+        : "—",
+    ],
+    [
       "WOZ-waarde",
       facts.woz?.actueleWaarde
         ? `€ ${facts.woz.actueleWaarde.toLocaleString("nl-NL")} (${facts.woz.peildatum ?? ""})`

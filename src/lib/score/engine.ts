@@ -99,6 +99,16 @@ function scoreWoning(facts: PropertyFacts): PartialScore {
   if (facts.bag?.gebruiksdoel?.some((g) => g.includes("woon"))) {
     parts.push(70);
   }
+  if (facts.perceel?.grootteM2) {
+    details.push(
+      `Perceel ${facts.perceel.grootteM2.toLocaleString("nl-NL")} m² (${facts.perceel.kadastraleAanduiding})`,
+    );
+  }
+  if (facts.monument?.isRijksmonument) {
+    details.push(
+      `Rijksmonument${facts.monument.rijksmonumentNummer ? ` (nr. ${facts.monument.rijksmonumentNummer})` : ""}`,
+    );
+  }
 
   return {
     key: "woning",
@@ -183,7 +193,13 @@ function scoreMilieu(facts: PropertyFacts): PartialScore {
   if (e?.geluidLden != null) {
     // 50 dB good, 70+ bad
     parts.push(clamp(100 - (e.geluidLden - 45) * 4));
-    details.push(`Geluid Lden ${Math.round(e.geluidLden)} dB`);
+    details.push(`Geluid Lden ${Math.round(e.geluidLden)} dB (alle bronnen)`);
+    const perBron = [
+      e.geluidWegLden != null ? `weg ${Math.round(e.geluidWegLden)}` : null,
+      e.geluidSpoorLden != null ? `spoor ${Math.round(e.geluidSpoorLden)}` : null,
+      e.geluidVliegLden != null ? `vlieg ${Math.round(e.geluidVliegLden)}` : null,
+    ].filter(Boolean);
+    if (perBron.length) details.push(`Per bron: ${perBron.join(", ")} dB`);
   }
   return {
     key: "milieu",
@@ -382,6 +398,13 @@ function bullets(facts: PropertyFacts, partials: PartialScore[]): {
     });
   }
 
+  if (facts.monument?.isRijksmonument) {
+    negatives.push({
+      kind: "negative",
+      text: "Rijksmonument: beschermde status, vergunningplicht en hogere onderhoudskosten bij verbouwing",
+    });
+  }
+
   // Fill from partial details if sparse
   for (const p of partials) {
     if (p.score != null && p.score >= 80 && positives.length < 5 && p.details[0]) {
@@ -505,6 +528,24 @@ function buildRisks(facts: PropertyFacts): RiskItem[] {
         ? "Geen data"
         : `${trend}% / jaar (WOZ €${facts.woz?.actueleWaarde?.toLocaleString("nl-NL") ?? "—"})`,
     sourceId: "woz",
+  });
+
+  risks.push({
+    id: "monument",
+    label: "Monumentstatus",
+    level: !facts.monument
+      ? "unknown"
+      : facts.monument.isRijksmonument
+        ? "amber"
+        : "green",
+    detail: !facts.monument
+      ? "Geen data"
+      : facts.monument.isRijksmonument
+        ? `Rijksmonument${facts.monument.rijksmonumentNummer ? ` nr. ${facts.monument.rijksmonumentNummer}` : ""} — vergunningplicht bij verbouwing`
+        : facts.monument.aantalBinnen75m > 0
+          ? `Geen monument; ${facts.monument.aantalBinnen75m} rijksmonument(en) binnen 75 m`
+          : "Geen rijksmonument (indicatie)",
+    sourceId: "monument",
   });
 
   const crime = facts.crime?.pctVsLandelijk;

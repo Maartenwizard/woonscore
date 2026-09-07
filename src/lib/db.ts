@@ -58,6 +58,14 @@ export function getDb(): Database.Database {
       window_start INTEGER NOT NULL,
       count INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS report_history (
+      nummeraanduiding_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      total INTEGER,
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (nummeraanduiding_id, date)
+    );
   `);
   migrateScholen(db);
   return db;
