@@ -17,7 +17,7 @@ async function main() {
     process.exit(1);
   }
 
-  const stripe = new Stripe(key, { apiVersion: "2026-07-29.dahlia" });
+  const stripe = new Stripe(key, { apiVersion: "2026-08-26.dahlia" });
 
   const zakelijk = await stripe.products.create({
     name: "Woonscore Zakelijk",

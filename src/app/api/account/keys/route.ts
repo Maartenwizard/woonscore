@@ -9,7 +9,14 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const user = ensureUser(userId);
-  const keys = listKeys(userId).map(({ hash: _h, ...rest }) => rest);
+  const keys = listKeys(userId).map((k) => ({
+    id: k.id,
+    clerk_id: k.clerk_id,
+    prefix: k.prefix,
+    name: k.name,
+    created_at: k.created_at,
+    last_used_at: k.last_used_at,
+  }));
   return NextResponse.json({
     keys,
     plan: user.plan,
