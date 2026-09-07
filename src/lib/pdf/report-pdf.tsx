@@ -94,6 +94,18 @@ export function ReportPdf({ report }: { report: FullReport }) {
         : "—",
     ],
     [
+      "Beschermd gezicht",
+      facts.surroundings?.beschermdGezicht
+        ? facts.surroundings.beschermdGezichtNaam ?? "ja"
+        : "nee / onbekend",
+    ],
+    [
+      "Markt",
+      facts.market?.prijsindexYoY != null
+        ? `Prijsindex ${facts.market.regio ?? ""} ${facts.market.prijsindexYoY}% YoY`
+        : "—",
+    ],
+    [
       "WOZ-waarde",
       facts.woz?.actueleWaarde
         ? `€ ${facts.woz.actueleWaarde.toLocaleString("nl-NL")} (${facts.woz.peildatum ?? ""})`

@@ -8,15 +8,18 @@ import {
   resolveFreeText,
   suggestAddresses,
 } from "@/lib/adapters/locatieserver";
+import { marktAdapter } from "@/lib/adapters/markt";
 import { monumentAdapter } from "@/lib/adapters/monument";
 import { perceelAdapter } from "@/lib/adapters/perceel";
 import { enrichCrimeWithPopulation, politieAdapter } from "@/lib/adapters/politie";
 import { rivmAdapter } from "@/lib/adapters/rivm";
 import { scholenAdapter } from "@/lib/adapters/scholen";
+import { surroundingsAdapter } from "@/lib/adapters/surroundings";
 import { wozAdapter } from "@/lib/adapters/woz";
 import { loadReportHistory, saveReport, saveReportHistory } from "@/lib/cache";
-import { maybeSummarize } from "@/lib/llm";
+import { maybeBuurtVergelijking, maybeSummarize } from "@/lib/llm";
 import { computeScore } from "@/lib/score/engine";
+import { buildImprovements } from "@/lib/score/improvements";
 import type {
   FullReport,
   PropertyFacts,
@@ -43,6 +46,8 @@ export async function buildReport(
     scholenAdapter(address),
     perceelAdapter(address),
     monumentAdapter(address),
+    marktAdapter(address),
+    surroundingsAdapter(address),
   ]);
 
   const sources: SourceMeta[] = [];
@@ -72,6 +77,8 @@ export async function buildReport(
   const schools = pick<PropertyFacts["schools"]>(8);
   const perceel = pick<PropertyFacts["perceel"]>(9);
   const monument = pick<PropertyFacts["monument"]>(10);
+  const market = pick<PropertyFacts["market"]>(11);
+  const surroundings = pick<PropertyFacts["surroundings"]>(12);
 
   crime = enrichCrimeWithPopulation(crime ?? null, cbs?.inwoners);
 
@@ -94,12 +101,19 @@ export async function buildReport(
     schools: schools ?? undefined,
     perceel: perceel ?? undefined,
     monument: monument ?? undefined,
+    market: market ?? undefined,
+    surroundings: surroundings ?? undefined,
     sources,
   };
 
   let score = computeScore(facts, profile);
-  const narrative = await maybeSummarize(facts, score);
+  const [narrative, buurt] = await Promise.all([
+    maybeSummarize(facts, score),
+    maybeBuurtVergelijking(facts, score),
+  ]);
   if (narrative) score = { ...score, summary: narrative };
+  if (buurt) score = { ...score, buurtVergelijking: buurt };
+  score = { ...score, improvements: buildImprovements(facts) };
 
   saveReportHistory(address.nummeraanduidingId, score.total);
   const history = loadReportHistory(address.nummeraanduidingId);

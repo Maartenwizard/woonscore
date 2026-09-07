@@ -79,6 +79,7 @@ export interface CbsFacts {
   afstandHuisartsKm?: number;
   afstandStationKm?: number;
   afstandBasisschoolKm?: number;
+  afstandKinderopvangKm?: number;
 }
 
 export interface CrimeFacts {
@@ -87,6 +88,29 @@ export interface CrimeFacts {
   landelijkGemiddeldePer1000?: number;
   pctVsLandelijk?: number;
   peiljaar?: string;
+  inbraakWoning?: number;
+  fietsendiefstal?: number;
+  mishandeling?: number;
+}
+
+export interface MarketFacts {
+  /** YoY-ontwikkeling prijsindex bestaande koopwoningen (%) */
+  prijsindexYoY?: number;
+  gemiddeldeVerkoopprijs?: number;
+  verkochteWoningen?: number;
+  verkochtYoY?: number;
+  peilperiode?: string;
+  regio?: string;
+}
+
+export interface SurroundingsFacts {
+  afstandOvHalteM?: number;
+  ovHalteNaam?: string;
+  ovHalteType?: string;
+  parkenBinnen400m?: number;
+  afstandParkM?: number;
+  beschermdGezicht?: boolean;
+  beschermdGezichtNaam?: string;
 }
 
 export interface Bekendmaking {
@@ -132,6 +156,14 @@ export interface ClimateFacts {
   overstromingsdiepteM?: number | null;
   funderingsrisico?: string | null;
   bodemdalingMmJaar?: number | null;
+  /** Waterdiepte bij hoosbui 70 mm / 2 uur (m); 0 = geen wateroverlast */
+  wateroverlastHoosbuiM?: number | null;
+  /** Stedelijk hitte-eiland (°C extra t.o.v. landelijk) */
+  hitteeilandC?: number | null;
+  /** Fysiologische equivalenttemperatuur buurt (°C, PET) */
+  gevoelstemperatuurC?: number | null;
+  /** Indicatie aardbevingsgebied (gemeenten Groningen-gasveld) */
+  aardbevingRisico?: boolean;
 }
 
 export interface SchoolNearby {
@@ -139,6 +171,7 @@ export interface SchoolNearby {
   afstandM: number;
   /** bo = basisonderwijs, vo = voortgezet onderwijs */
   type?: "bo" | "vo";
+  denominatie?: string;
 }
 
 export interface SchoolsFacts {
@@ -161,6 +194,8 @@ export interface PropertyFacts {
   schools?: SchoolsFacts;
   perceel?: PerceelFacts;
   monument?: MonumentFacts;
+  market?: MarketFacts;
+  surroundings?: SurroundingsFacts;
   sources: SourceMeta[];
 }
 
@@ -199,6 +234,13 @@ export interface RiskItem {
   sourceId?: string;
 }
 
+export interface Improvement {
+  id: string;
+  title: string;
+  detail: string;
+  impact: "high" | "medium" | "low";
+}
+
 export interface ScoreResult {
   profile: ScoreProfile;
   total: number | null;
@@ -207,6 +249,8 @@ export interface ScoreResult {
   negatives: Bullet[];
   risks?: RiskItem[];
   summary?: string;
+  buurtVergelijking?: string;
+  improvements?: Improvement[];
   disclaimer: string;
 }
 

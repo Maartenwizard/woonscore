@@ -50,6 +50,6 @@ docker compose up --build
 
 ## Bronnen
 
-BAG, EP-Online, WOZ-waardeloket, CBS, Politie open data, officiële bekendmakingen (SRU), RIVM (GCN lucht + ALO geluid, incl. per bron), Klimaateffectatlas, DUO-scholen (alle bo/vo-vestigingen, CC-BY 4.0), Kadastrale kaart (percelen, PDOK), Rijksmonumentenregister (RCE).
+BAG, EP-Online, WOZ-waardeloket, CBS (wijken/buurten + PBK prijsindex), Politie open data (incl. inbraak/fiets/mishandeling), officiële bekendmakingen (SRU), RIVM (GCN lucht + ALO geluid, incl. per bron), Klimaateffectatlas (overstroming, hoosbui, hitte, fundering), DUO-scholen (alle bo/vo-vestigingen, CC-BY 4.0), Kadastrale kaart (percelen, PDOK), Rijksmonumentenregister (RCE), OpenStreetMap (OV-haltes, groen, beschermd gezicht).
 
 Indicatief — geen taxatie of bouwkundig advies.

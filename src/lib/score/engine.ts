@@ -125,6 +125,12 @@ function scoreWaarde(facts: PropertyFacts): PartialScore {
   const trend = facts.woz?.trendPctPerJaar;
   if (facts.woz?.actueleWaarde) {
     details.push(`WOZ €${facts.woz.actueleWaarde.toLocaleString("nl-NL")}`);
+    if (facts.cbs?.gemiddeldeWoz && facts.cbs.gemiddeldeWoz > 0) {
+      const pct = Math.round((facts.woz.actueleWaarde / facts.cbs.gemiddeldeWoz) * 100);
+      details.push(
+        `WOZ is ${pct}% van het buurtgemiddelde (€${facts.cbs.gemiddeldeWoz.toLocaleString("nl-NL")})`,
+      );
+    }
   } else if (facts.cbs?.gemiddeldeWoz) {
     details.push(
       `Gem. WOZ buurt €${facts.cbs.gemiddeldeWoz.toLocaleString("nl-NL")} (fallback: CBS-buurtgemiddelde, geen WOZ-data voor dit object)`,
@@ -136,6 +142,22 @@ function scoreWaarde(facts: PropertyFacts): PartialScore {
     // 0%/yr → 50, +8% → ~90, -5% → ~25
     score = clamp(50 + trend * 5);
     details.push(`Trend ca. ${trend}% per jaar`);
+  }
+  if (facts.market?.prijsindexYoY != null) {
+    details.push(
+      `Prijsindex ${facts.market.regio ?? ""} ${facts.market.prijsindexYoY > 0 ? "+" : ""}${facts.market.prijsindexYoY}% t.o.v. een jaar eerder (${facts.market.peilperiode ?? ""})`,
+    );
+    if (score == null) score = clamp(50 + facts.market.prijsindexYoY * 3);
+  }
+  if (facts.market?.verkochtYoY != null) {
+    details.push(
+      `Verkopen ${facts.market.verkochtYoY > 0 ? "+" : ""}${facts.market.verkochtYoY}% t.o.v. een jaar eerder${facts.market.verkochteWoningen != null ? ` (${facts.market.verkochteWoningen} transacties)` : ""}`,
+    );
+  }
+  if (facts.market?.gemiddeldeVerkoopprijs) {
+    details.push(
+      `Gem. verkoopprijs ${facts.market.regio ?? ""} €${Math.round(facts.market.gemiddeldeVerkoopprijs).toLocaleString("nl-NL")}`,
+    );
   }
   return {
     key: "waarde",
@@ -167,6 +189,9 @@ function scoreVeiligheid(facts: PropertyFacts): PartialScore {
     details.push(`${c.misdrijvenTotaal} geregistreerde misdrijven (buurt)`);
     score = 55;
   }
+  if (c?.inbraakWoning != null) details.push(`Inbraak woning: ${c.inbraakWoning}`);
+  if (c?.fietsendiefstal != null) details.push(`Diefstal fiets/brommer: ${c.fietsendiefstal}`);
+  if (c?.mishandeling != null) details.push(`Mishandeling: ${c.mishandeling}`);
   return {
     key: "veiligheid",
     label: LABELS.veiligheid,
@@ -239,6 +264,26 @@ function scoreKlimaat(facts: PropertyFacts): PartialScore {
     parts.push(clamp(90 - Math.abs(c.bodemdalingMmJaar) * 8));
     details.push(`Bodemdaling ca. ${c.bodemdalingMmJaar} mm/jaar`);
   }
+  if (c?.wateroverlastHoosbuiM != null) {
+    const d = c.wateroverlastHoosbuiM;
+    parts.push(d <= 0 ? 90 : clamp(85 - d * 40));
+    details.push(
+      d <= 0
+        ? "Geen waterdiepte bij hoosbui (70 mm / 2 uur)"
+        : `Waterdiepte bij hoosbui ca. ${d} m (70 mm / 2 uur)`,
+    );
+  }
+  if (c?.hitteeilandC != null) {
+    parts.push(clamp(90 - c.hitteeilandC * 8));
+    details.push(`Stedelijk hitte-eiland +${c.hitteeilandC} °C`);
+  }
+  if (c?.gevoelstemperatuurC != null) {
+    details.push(`Gevoelstemperatuur buurt ${c.gevoelstemperatuurC} °C (PET)`);
+  }
+  if (c?.aardbevingRisico) {
+    parts.push(40);
+    details.push("Gemeente in of nabij het Groningen-gasveld (aardbevingsgebied, indicatief)");
+  }
   return {
     key: "klimaat",
     label: LABELS.klimaat,
@@ -256,6 +301,8 @@ function scoreVoorzieningen(facts: PropertyFacts): PartialScore {
     // Met de volledige DUO-set zijn 3+ scholen binnen 1 km normaal; vlakkere curve
     parts.push(clamp(30 + Math.min(n, 12) * 5, 30, 90));
     details.push(`${n} scholen binnen 1 km`);
+    const dens = [...new Set(facts.schools.scholen.map((s) => s.denominatie).filter(Boolean))];
+    if (dens.length) details.push(`Denominaties: ${dens.slice(0, 4).join(", ")}`);
   }
   const cbs = facts.cbs;
   if (cbs?.afstandSupermarktKm != null) {
@@ -269,6 +316,23 @@ function scoreVoorzieningen(facts: PropertyFacts): PartialScore {
   if (cbs?.afstandStationKm != null) {
     parts.push(clamp(95 - cbs.afstandStationKm * 8));
     details.push(`Station op ${cbs.afstandStationKm} km`);
+  }
+  if (cbs?.afstandKinderopvangKm != null) {
+    parts.push(clamp(100 - cbs.afstandKinderopvangKm * 25));
+    details.push(`Kinderopvang op ${cbs.afstandKinderopvangKm} km`);
+  }
+  if (facts.surroundings?.afstandOvHalteM != null) {
+    const m = facts.surroundings.afstandOvHalteM;
+    parts.push(clamp(95 - m / 12));
+    details.push(
+      `OV-halte op ${m} m${facts.surroundings.ovHalteNaam ? ` (${facts.surroundings.ovHalteType ?? "halte"} ${facts.surroundings.ovHalteNaam})` : ""}`,
+    );
+  }
+  if (facts.surroundings?.afstandParkM != null) {
+    parts.push(clamp(90 - facts.surroundings.afstandParkM / 8));
+    details.push(
+      `Park/groen op ${facts.surroundings.afstandParkM} m${facts.surroundings.parkenBinnen400m ? ` (${facts.surroundings.parkenBinnen400m} binnen 400 m)` : ""}`,
+    );
   }
   return {
     key: "voorzieningen",
@@ -405,6 +469,27 @@ function bullets(facts: PropertyFacts, partials: PartialScore[]): {
     });
   }
 
+  if (facts.surroundings?.beschermdGezicht) {
+    negatives.push({
+      kind: "negative",
+      text: `Beschermd stads- of dorpsgezicht${facts.surroundings.beschermdGezichtNaam ? ` (${facts.surroundings.beschermdGezichtNaam})` : ""}`,
+    });
+  }
+
+  if (facts.climate?.aardbevingRisico) {
+    negatives.push({
+      kind: "negative",
+      text: "Ligging in aardbevingsgebied (Groningen-gasveld, indicatief)",
+    });
+  }
+
+  if (facts.crime?.inbraakWoning != null && facts.crime.inbraakWoning >= 15) {
+    negatives.push({
+      kind: "negative",
+      text: `${facts.crime.inbraakWoning} woninginbraken geregistreerd in de buurt (${facts.crime.peiljaar ?? ""})`,
+    });
+  }
+
   // Fill from partial details if sparse
   for (const p of partials) {
     if (p.score != null && p.score >= 80 && positives.length < 5 && p.details[0]) {
@@ -528,6 +613,49 @@ function buildRisks(facts: PropertyFacts): RiskItem[] {
         ? "Geen data"
         : `${trend}% / jaar (WOZ €${facts.woz?.actueleWaarde?.toLocaleString("nl-NL") ?? "—"})`,
     sourceId: "woz",
+  });
+
+  const hoos = facts.climate?.wateroverlastHoosbuiM;
+  risks.push({
+    id: "hoosbui",
+    label: "Wateroverlast hoosbui",
+    level:
+      hoos == null ? "unknown" : hoos <= 0 ? "green" : hoos < 0.2 ? "amber" : "red",
+    detail:
+      hoos == null
+        ? "Geen data"
+        : hoos <= 0
+          ? "Geen waterdiepte bij 70 mm / 2 uur"
+          : `Ca. ${hoos} m bij hoosbui`,
+    sourceId: "klimaat",
+  });
+
+  risks.push({
+    id: "hitte",
+    label: "Hittestress",
+    level:
+      facts.climate?.hitteeilandC == null
+        ? "unknown"
+        : facts.climate.hitteeilandC < 1.5
+          ? "green"
+          : facts.climate.hitteeilandC < 3
+            ? "amber"
+            : "red",
+    detail:
+      facts.climate?.hitteeilandC != null
+        ? `Hitte-eiland +${facts.climate.hitteeilandC} °C${facts.climate.gevoelstemperatuurC != null ? `, PET ${facts.climate.gevoelstemperatuurC} °C` : ""}`
+        : "Geen data",
+    sourceId: "klimaat",
+  });
+
+  risks.push({
+    id: "aardbeving",
+    label: "Aardbeving",
+    level: facts.climate?.aardbevingRisico ? "amber" : "green",
+    detail: facts.climate?.aardbevingRisico
+      ? "Gemeente in/nabij Groningen-gasveld"
+      : "Niet in bekend aardbevingsgebied",
+    sourceId: "klimaat",
   });
 
   risks.push({

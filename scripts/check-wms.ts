@@ -56,6 +56,9 @@ async function main() {
         fundering: KEA_LAYERS.fundering,
         bodemdaling: KEA_LAYERS.bodemdaling,
         bodemdalingFallback: KEA_LAYERS.bodemdalingFallback,
+        hoosbui: KEA_LAYERS.hoosbui,
+        hitte: KEA_LAYERS.hitte,
+        pet: KEA_LAYERS.pet,
       },
     },
   ];

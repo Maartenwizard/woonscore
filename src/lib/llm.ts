@@ -96,6 +96,8 @@ export async function answerReportQuestion(
       : undefined,
     perceel: facts.perceel,
     monument: facts.monument,
+    markt: facts.market,
+    omgeving: facts.surroundings,
     bekendmakingen: facts.bekendmakingen
       ? {
           count12m: facts.bekendmakingen.count12m,
@@ -128,6 +130,61 @@ export async function answerReportQuestion(
           },
           ...history.slice(-6).map((m) => ({ role: m.role, content: m.content })),
           { role: "user", content: question },
+        ],
+      }),
+    });
+    if (!res.ok) return undefined;
+    const json = (await res.json()) as {
+      choices?: Array<{ message?: { content?: string } }>;
+    };
+    return json.choices?.[0]?.message?.content?.trim();
+  } catch {
+    return undefined;
+  }
+}
+
+export async function maybeBuurtVergelijking(
+  facts: PropertyFacts,
+  score: ScoreResult,
+): Promise<string | undefined> {
+  const key = process.env.OPENAI_API_KEY;
+  if (!key) return undefined;
+  try {
+    const prompt = {
+      adres: facts.address.weergavenaam,
+      buurt: facts.address.buurtnaam,
+      score: score.total,
+      woz: facts.woz?.actueleWaarde,
+      gemWozBuurt: facts.cbs?.gemiddeldeWoz,
+      inkomenBuurt: facts.cbs?.gemiddeldInkomen,
+      criminaliteitVsLandelijk: facts.crime?.pctVsLandelijk,
+      inbraak: facts.crime?.inbraakWoning,
+      prijsindexYoY: facts.market?.prijsindexYoY,
+      verkochtYoY: facts.market?.verkochtYoY,
+      voorzieningen: {
+        scholen: facts.schools?.binnen1km,
+        ovM: facts.surroundings?.afstandOvHalteM,
+        parkM: facts.surroundings?.afstandParkM,
+        supermarktKm: facts.cbs?.afstandSupermarktKm,
+      },
+    };
+    const res = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${key}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4o-mini",
+        temperature: 0.3,
+        max_tokens: 160,
+        messages: [
+          {
+            role: "system",
+            content:
+              "Vergelijk deze woning in 2-3 Nederlandse zinnen met de buurt en de regionale markt. Neutraal, geen advies. Noem alleen wat in de data staat.",
+          },
+          { role: "user", content: JSON.stringify(prompt) },
         ],
       }),
     });

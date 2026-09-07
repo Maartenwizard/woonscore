@@ -11,7 +11,7 @@ export async function fetchCbs(address: ResolvedAddress): Promise<CbsFacts | nul
   const code = normalizeBuurt(address.buurtcode);
   if (!code) return null;
 
-  const cacheKey = `cbs:${code}`;
+  const cacheKey = `cbs:v2:${code}`;
   const cached = cacheGet<CbsFacts>(cacheKey);
   if (cached) return cached;
 
@@ -45,7 +45,7 @@ async function fetchCbsFallback(code: string): Promise<CbsFacts | null> {
   const row = json.value?.[0];
   if (!row) return null;
   const facts = mapCbsRow(row);
-  cacheSet(`cbs:${code}`, "cbs", facts, TTL.cbs);
+  cacheSet(`cbs:v2:${code}`, "cbs", facts, TTL.cbs);
   return facts;
 }
 
@@ -55,19 +55,27 @@ export function mapCbsRow(row: Record<string, unknown>): CbsFacts {
     inwoners: num(row.AantalInwoners_5 ?? row.AantalInwoners),
     huishoudens: num(row.HuishoudensTotaal_28 ?? row.HuishoudensTotaal),
     gemiddeldInkomen: num(
-      row.GemiddeldInkomenPerInwoner_72 ??
+      row.GemiddeldInkomenPerInwoner_78 ??
+        row.GemiddeldInkomenPerInwoner_72 ??
         row.GemiddeldBesteedbaarInkomenPerHuishouden_75 ??
         row.GemiddeldInkomen,
     ),
     gemiddeldeWoz: wozDuizend != null ? wozDuizend * 1000 : undefined,
     afstandSupermarktKm: num(
-      row.AfstandTotGroteSupermarkt_105 ?? row.AfstandTotSupermarkt,
+      row.AfstandTotGroteSupermarkt_111 ??
+        row.AfstandTotGroteSupermarkt_105 ??
+        row.AfstandTotSupermarkt,
     ),
-    afstandHuisartsKm: num(row.AfstandTotHuisartsenpraktijk_98 ?? row.AfstandTotHuisarts),
+    afstandHuisartsKm: num(
+      row.AfstandTotHuisartsenpraktijk_110 ??
+        row.AfstandTotHuisartsenpraktijk_98 ??
+        row.AfstandTotHuisarts,
+    ),
     afstandStationKm: num(row.AfstandTotTreinstationsTotaal_111 ?? row.AfstandTotStation),
     afstandBasisschoolKm: num(
-      row.AfstandTotSchool_108 ?? row.AfstandTotBasisonderwijs,
+      row.AfstandTotSchool_113 ?? row.AfstandTotSchool_108 ?? row.AfstandTotBasisonderwijs,
     ),
+    afstandKinderopvangKm: num(row.AfstandTotKinderdagverblijf_112),
   };
 }
 

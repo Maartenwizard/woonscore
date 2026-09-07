@@ -18,7 +18,7 @@ export async function fetchSchools(address: ResolvedAddress): Promise<SchoolsFac
   const dLon = 0.012 / Math.cos((address.lat * Math.PI) / 180);
   const rows = db
     .prepare(
-      `SELECT naam, lat, lon, type FROM scholen
+      `SELECT naam, lat, lon, type, denominatie FROM scholen
        WHERE lat BETWEEN ? AND ? AND lon BETWEEN ? AND ?`,
     )
     .all(address.lat - dLat, address.lat + dLat, address.lon - dLon, address.lon + dLon) as Array<{
@@ -26,6 +26,7 @@ export async function fetchSchools(address: ResolvedAddress): Promise<SchoolsFac
     lat: number;
     lon: number;
     type: string | null;
+    denominatie: string | null;
   }>;
 
   const binnenBereik = rows
@@ -33,6 +34,7 @@ export async function fetchSchools(address: ResolvedAddress): Promise<SchoolsFac
       naam: r.naam,
       afstandM: Math.round(haversineM(address.lat, address.lon, r.lat, r.lon)),
       type: r.type === "bo" ? ("bo" as const) : r.type === "vo" ? ("vo" as const) : undefined,
+      denominatie: r.denominatie || undefined,
     }))
     .filter((s) => s.afstandM <= 1000)
     .sort((a, b) => a.afstandM - b.afstandM);

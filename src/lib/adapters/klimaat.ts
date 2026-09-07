@@ -22,32 +22,68 @@ export const KEA_LAYERS = {
   fundering: ["risicopaalrot_huidig"],
   bodemdaling: ["nl_bodemdaling_totaal_v20260623"],
   bodemdalingFallback: ["bodemdaling_2020_2050hoog"],
+  hoosbui: ["waterdiepte_neerslag_70mm_2uur", "waterdiepte_neerslag_1-100_r_wateroverlast"],
+  hitte: ["hitteeiland"],
+  pet: ["GevoelstemperatuurBuurt_2022", "Gevoelstemperatuur_Buurt2022_v2"],
 } as const;
+
+/** Gemeenten in of rond het Groningen-gasveld (NCG-gebied, indicatief). */
+const AARDBEVING_GEMEENTEN = new Set(
+  [
+    "Groningen",
+    "Eemsdelta",
+    "Het Hogeland",
+    "Midden-Groningen",
+    "Oldambt",
+    "Pekela",
+    "Stadskanaal",
+    "Veendam",
+    "Westerkwartier",
+    "Westerwolde",
+    "Aa en Hunze",
+    "Tynaarlo",
+    "Noordenveld",
+  ].map((g) => g.toLowerCase()),
+);
 
 const NODATA_THRESHOLD = -999;
 
 export async function fetchClimateAt(
   address: ResolvedAddress,
 ): Promise<ClimateFacts | null> {
-  const cacheKey = `klimaat:${address.lat.toFixed(4)}:${address.lon.toFixed(4)}`;
+  const cacheKey = `klimaat:v2:${address.lat.toFixed(4)}:${address.lon.toFixed(4)}`;
   const cached = cacheGet<ClimateFacts>(cacheKey);
   if (cached) return cached;
 
-  const [overstroming, paalrot, bodemdaling, bodemdaling2050] = await Promise.all([
-    firstProps(KEA_LAYERS.overstroming, address),
-    firstProps(KEA_LAYERS.fundering, address),
-    firstProps(KEA_LAYERS.bodemdaling, address),
-    firstProps(KEA_LAYERS.bodemdalingFallback, address),
-  ]);
+  const [overstroming, paalrot, bodemdaling, bodemdaling2050, hoosbui, hitte, pet] =
+    await Promise.all([
+      firstProps(KEA_LAYERS.overstroming, address),
+      firstProps(KEA_LAYERS.fundering, address),
+      firstProps(KEA_LAYERS.bodemdaling, address),
+      firstProps(KEA_LAYERS.bodemdalingFallback, address),
+      firstProps(KEA_LAYERS.hoosbui, address),
+      firstProps(KEA_LAYERS.hitte, address),
+      firstProps(KEA_LAYERS.pet, address),
+    ]);
 
   const overstromingsdiepteM = parseWaterdiepte(overstroming);
   const funderingsrisico = parsePaalrot(paalrot);
   const bodemdalingMmJaar = parseBodemdaling(bodemdaling, bodemdaling2050);
+  const wateroverlastHoosbuiM = parseHoosbui(hoosbui);
+  const hitteeilandC = parseHitte(hitte);
+  const gevoelstemperatuurC = parsePet(pet);
+  const aardbevingRisico = AARDBEVING_GEMEENTEN.has(
+    (address.gemeentenaam ?? "").toLowerCase(),
+  );
 
   if (
     overstromingsdiepteM == null &&
     funderingsrisico == null &&
-    bodemdalingMmJaar == null
+    bodemdalingMmJaar == null &&
+    wateroverlastHoosbuiM == null &&
+    hitteeilandC == null &&
+    gevoelstemperatuurC == null &&
+    !aardbevingRisico
   ) {
     return null;
   }
@@ -56,6 +92,10 @@ export async function fetchClimateAt(
     overstromingsdiepteM,
     funderingsrisico,
     bodemdalingMmJaar,
+    wateroverlastHoosbuiM,
+    hitteeilandC,
+    gevoelstemperatuurC,
+    aardbevingRisico: aardbevingRisico || undefined,
   };
   cacheSet(cacheKey, "klimaat", facts, TTL.klimaat);
   return facts;
@@ -69,6 +109,28 @@ export function parseWaterdiepte(props: Record<string, unknown> | null): number 
   if (v <= NODATA_THRESHOLD) return 0;
   if (v < 0) return 0;
   return Math.round(v * 100) / 100;
+}
+
+/** 8-bit rasters gebruiken 255 als nodata; waarden > 20 m zijn onzinnig. */
+export function parseHoosbui(props: Record<string, unknown> | null): number | null {
+  if (!props) return null;
+  const v = Number(props.GRAY_INDEX);
+  if (!Number.isFinite(v) || v < 0 || v >= 254 || v > 20) return null;
+  return Math.round(v * 100) / 100;
+}
+
+export function parseHitte(props: Record<string, unknown> | null): number | null {
+  if (!props) return null;
+  const v = Number(props.GRAY_INDEX);
+  if (!Number.isFinite(v) || v < 0 || v > 15) return null;
+  return Math.round(v * 10) / 10;
+}
+
+export function parsePet(props: Record<string, unknown> | null): number | null {
+  if (!props) return null;
+  const v = Number(props.PET_gem ?? props._mean);
+  if (!Number.isFinite(v) || v < -20 || v > 60) return null;
+  return Math.round(v);
 }
 
 export function parsePaalrot(props: Record<string, unknown> | null): string | null {

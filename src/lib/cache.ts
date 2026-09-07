@@ -14,6 +14,8 @@ export const TTL = {
   report: 24 * 60 * 60,
   perceel: 30 * 24 * 60 * 60,
   monument: 30 * 24 * 60 * 60,
+  markt: 7 * 24 * 60 * 60,
+  surroundings: 30 * 24 * 60 * 60,
 } as const;
 
 export function cacheGet<T>(key: string): T | null {

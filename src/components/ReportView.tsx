@@ -5,6 +5,8 @@ import type { FullReport } from "@/lib/types";
 import { Disclaimer } from "./Nav";
 import { PosNegList } from "./PosNegList";
 import { PropertyMap } from "./PropertyMap";
+import { Improvements } from "./Improvements";
+import { PersonalWeights } from "./PersonalWeights";
 import { ReportChat } from "./ReportChat";
 import { RiskChecklist } from "./RiskChecklist";
 import { ScoreBars } from "./ScoreBars";
@@ -28,6 +30,7 @@ export function ReportView({
       : null,
     facts.energy?.labelklasse ? `Label ${facts.energy.labelklasse}` : null,
     facts.monument?.isRijksmonument ? "Rijksmonument" : null,
+    facts.surroundings?.beschermdGezicht ? "Beschermd gezicht" : null,
     facts.woz?.actueleWaarde
       ? `WOZ €${facts.woz.actueleWaarde.toLocaleString("nl-NL")}`
       : facts.cbs?.gemiddeldeWoz
@@ -60,6 +63,12 @@ export function ReportView({
           </div>
           {score.summary && (
             <p className="max-w-xl text-[var(--muted)]">{score.summary}</p>
+          )}
+          {score.buurtVergelijking && (
+            <p className="max-w-xl text-sm text-[var(--muted)]">
+              <span className="font-medium text-[var(--ink)]">Ten opzichte van de buurt: </span>
+              {score.buurtVergelijking}
+            </p>
           )}
           <div className="flex flex-wrap justify-center gap-3 md:justify-start">
             <Link
@@ -101,6 +110,12 @@ export function ReportView({
       <PropertyMap lat={a.lat} lon={a.lon} label={a.weergavenaam} />
 
       <PosNegList positives={score.positives} negatives={score.negatives} />
+
+      {score.improvements && score.improvements.length > 0 && (
+        <Improvements items={score.improvements} />
+      )}
+
+      <PersonalWeights partials={score.partials} officialTotal={score.total} />
 
       <section className="space-y-3">
         <h2 className="text-lg font-semibold text-[var(--ink)]">Deelscores</h2>

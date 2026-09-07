@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { mapCbsRow } from "./cbs";
-import { parseBodemdaling, parsePaalrot, parseWaterdiepte } from "./klimaat";
+import { parseBodemdaling, parseHitte, parseHoosbui, parsePaalrot, parseWaterdiepte } from "./klimaat";
 import { computeTrend } from "./woz";
 
 describe("woz computeTrend", () => {
@@ -40,6 +40,19 @@ describe("cbs mapCbsRow", () => {
     expect(facts.afstandStationKm).toBe(1.2);
   });
 
+  it("leest nieuwe nabijheidsvelden (kinderopvang)", () => {
+    const facts = mapCbsRow({
+      AfstandTotGroteSupermarkt_111: 0.3,
+      AfstandTotHuisartsenpraktijk_110: 0.5,
+      AfstandTotKinderdagverblijf_112: 0.2,
+      AfstandTotSchool_113: 0.4,
+      GemiddeldInkomenPerInwoner_78: 32000,
+    });
+    expect(facts.afstandKinderopvangKm).toBe(0.2);
+    expect(facts.afstandBasisschoolKm).toBe(0.4);
+    expect(facts.gemiddeldInkomen).toBe(32000);
+  });
+
   it("laat ontbrekende velden undefined", () => {
     const facts = mapCbsRow({ GemiddeldeWOZWaardeVanWoningen_39: "." });
     expect(facts.gemiddeldeWoz).toBeUndefined();
@@ -61,6 +74,13 @@ describe("klimaat parsers", () => {
     expect(parsePaalrot({ no_cc_risi: 35 })).toContain("hoog");
     expect(parsePaalrot({ no_cc_risi: -1 })).toBeNull();
     expect(parsePaalrot(null)).toBeNull();
+  });
+
+  it("negeert hoosbui-nodata (255) en leest hitte-eiland", () => {
+    expect(parseHoosbui({ GRAY_INDEX: 255 })).toBeNull();
+    expect(parseHoosbui({ GRAY_INDEX: 0.2 })).toBe(0.2);
+    expect(parseHitte({ GRAY_INDEX: 2.45 })).toBe(2.5);
+    expect(parseHitte({ GRAY_INDEX: 99 })).toBeNull();
   });
 
   it("gebruikt snelheid (mm/jaar) en valt terug op 2050-raster", () => {
