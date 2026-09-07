@@ -20,6 +20,9 @@ export const RIVM_LAYERS = {
     "rivm_20220601_Geluid_lden_allebronnen_2020",
     "rivm_20220601_Geluid_lden_wegverkeer_2020",
   ],
+  geluidWeg: ["rivm_20220601_Geluid_lden_wegverkeer_2020"],
+  geluidSpoor: ["rivm_20220601_Geluid_lden_treinverkeer_2020"],
+  geluidVlieg: ["rivm_20220601_Geluid_lden_vliegverkeer_2020"],
 } as const;
 
 export async function fetchEnvironment(
@@ -29,16 +32,22 @@ export async function fetchEnvironment(
   const cached = cacheGet<EnvironmentFacts>(cacheKey);
   if (cached) return cached;
 
-  const [no2, pm25, geluid] = await Promise.all([
+  const [no2, pm25, geluid, geluidWeg, geluidSpoor, geluidVlieg] = await Promise.all([
     firstLayerValue(RIVM_WMS.gcn, RIVM_LAYERS.no2, address),
     firstLayerValue(RIVM_WMS.gcn, RIVM_LAYERS.pm25, address),
     firstLayerValue(RIVM_WMS.alo, RIVM_LAYERS.geluid, address),
+    firstLayerValue(RIVM_WMS.alo, RIVM_LAYERS.geluidWeg, address),
+    firstLayerValue(RIVM_WMS.alo, RIVM_LAYERS.geluidSpoor, address),
+    firstLayerValue(RIVM_WMS.alo, RIVM_LAYERS.geluidVlieg, address),
   ]);
 
   const facts: EnvironmentFacts = {
     no2: sanitizeConcentration(no2),
     pm25: sanitizeConcentration(pm25),
     geluidLden: sanitizeLden(geluid),
+    geluidWegLden: sanitizeLden(geluidWeg),
+    geluidSpoorLden: sanitizeLden(geluidSpoor),
+    geluidVliegLden: sanitizeLden(geluidVlieg),
   };
 
   if (facts.no2 == null && facts.pm25 == null && facts.geluidLden == null) {
