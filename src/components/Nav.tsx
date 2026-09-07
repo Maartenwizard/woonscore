@@ -1,6 +1,11 @@
 import Link from "next/link";
+import { AuthButtons } from "./AuthButtons";
 
-export function Nav({ active }: { active?: "home" | "zakelijk" | "docs" | "status" }) {
+export function Nav({
+  active,
+}: {
+  active?: "home" | "vergelijk" | "zakelijk" | "docs" | "status" | "prijzen" | "account";
+}) {
   const link = (href: string, id: typeof active, label: string) => (
     <Link
       href={href}
@@ -17,9 +22,12 @@ export function Nav({ active }: { active?: "home" | "zakelijk" | "docs" | "statu
       </Link>
       <nav className="flex items-center gap-5">
         {link("/", "home", "Consument")}
+        {link("/vergelijk", "vergelijk", "Vergelijk")}
         {link("/zakelijk", "zakelijk", "Zakelijk")}
+        {link("/prijzen", "prijzen", "Prijzen")}
         {link("/docs", "docs", "API")}
         {link("/status", "status", "Status")}
+        <AuthButtons />
       </nav>
     </header>
   );

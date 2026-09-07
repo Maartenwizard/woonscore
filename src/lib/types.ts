@@ -79,6 +79,7 @@ export interface CbsFacts {
   afstandHuisartsKm?: number;
   afstandStationKm?: number;
   afstandBasisschoolKm?: number;
+  afstandKinderopvangKm?: number;
 }
 
 export interface CrimeFacts {
@@ -87,6 +88,29 @@ export interface CrimeFacts {
   landelijkGemiddeldePer1000?: number;
   pctVsLandelijk?: number;
   peiljaar?: string;
+  inbraakWoning?: number;
+  fietsendiefstal?: number;
+  mishandeling?: number;
+}
+
+export interface MarketFacts {
+  /** YoY-ontwikkeling prijsindex bestaande koopwoningen (%) */
+  prijsindexYoY?: number;
+  gemiddeldeVerkoopprijs?: number;
+  verkochteWoningen?: number;
+  verkochtYoY?: number;
+  peilperiode?: string;
+  regio?: string;
+}
+
+export interface SurroundingsFacts {
+  afstandOvHalteM?: number;
+  ovHalteNaam?: string;
+  ovHalteType?: string;
+  parkenBinnen400m?: number;
+  afstandParkM?: number;
+  beschermdGezicht?: boolean;
+  beschermdGezichtNaam?: string;
 }
 
 export interface Bekendmaking {
@@ -105,22 +129,55 @@ export interface BekendmakingenFacts {
 export interface EnvironmentFacts {
   no2?: number;
   pm25?: number;
+  /** Lden alle bronnen gecombineerd (dB) */
   geluidLden?: number;
+  geluidWegLden?: number;
+  geluidSpoorLden?: number;
+  geluidVliegLden?: number;
+}
+
+export interface PerceelFacts {
+  /** Bijv. "Amsterdam F 6685" */
+  kadastraleAanduiding: string;
+  grootteM2?: number;
+}
+
+export interface MonumentFacts {
+  /** Indicatie o.b.v. rijksmonumentpunten binnen ~15 m van het adres */
+  isRijksmonument: boolean;
+  rijksmonumentNummer?: number;
+  categorie?: string;
+  monumentUrl?: string;
+  /** Monumentdichtheid rond het adres (binnen ~75 m), bv. beschermd stadsgezicht-indicatie */
+  aantalBinnen75m: number;
 }
 
 export interface ClimateFacts {
   overstromingsdiepteM?: number | null;
   funderingsrisico?: string | null;
   bodemdalingMmJaar?: number | null;
+  /** Waterdiepte bij hoosbui 70 mm / 2 uur (m); 0 = geen wateroverlast */
+  wateroverlastHoosbuiM?: number | null;
+  /** Stedelijk hitte-eiland (°C extra t.o.v. landelijk) */
+  hitteeilandC?: number | null;
+  /** Fysiologische equivalenttemperatuur buurt (°C, PET) */
+  gevoelstemperatuurC?: number | null;
+  /** Indicatie aardbevingsgebied (gemeenten Groningen-gasveld) */
+  aardbevingRisico?: boolean;
 }
 
 export interface SchoolNearby {
   naam: string;
   afstandM: number;
+  /** bo = basisonderwijs, vo = voortgezet onderwijs */
+  type?: "bo" | "vo";
+  denominatie?: string;
 }
 
 export interface SchoolsFacts {
   binnen1km: number;
+  basisscholenBinnen1km?: number;
+  middelbareScholenBinnen1km?: number;
   scholen: SchoolNearby[];
 }
 
@@ -135,6 +192,10 @@ export interface PropertyFacts {
   environment?: EnvironmentFacts;
   climate?: ClimateFacts;
   schools?: SchoolsFacts;
+  perceel?: PerceelFacts;
+  monument?: MonumentFacts;
+  market?: MarketFacts;
+  surroundings?: SurroundingsFacts;
   sources: SourceMeta[];
 }
 
@@ -151,6 +212,8 @@ export interface PartialScore {
   key: PartialScoreKey;
   label: string;
   score: number | null;
+  /** Ongekalibreerde score (alleen gezet als kalibratie is toegepast) */
+  raw?: number;
   weight: number;
   benchmark?: number;
   details: string[];
@@ -171,6 +234,38 @@ export interface RiskItem {
   sourceId?: string;
 }
 
+export interface Improvement {
+  id: string;
+  title: string;
+  detail: string;
+  impact: "high" | "medium" | "low";
+}
+
+export type MemoOordeel = "groen" | "oranje" | "rood";
+
+export interface MemoKostenpost {
+  post: string;
+  bandbreedte: string;
+  toelichting: string;
+}
+
+/**
+ * Deterministisch beslismemo bovenop de score: wat betekent dit adres,
+ * wat vraag je op de bezichtiging en welke stukken vraag je op.
+ */
+export interface DecisionMemo {
+  oordeel: MemoOordeel;
+  oordeelLabel: string;
+  /** De 2-4 feiten die het oordeel dragen */
+  kernpunten: string[];
+  /** Vragen voor bezichtiging of verkopend makelaar */
+  vragen: string[];
+  /** Documenten om op te vragen vóór bod/voorbehoud */
+  documenten: string[];
+  /** Indicatieve kosten-bandbreedtes in euro's */
+  kosten: MemoKostenpost[];
+}
+
 export interface ScoreResult {
   profile: ScoreProfile;
   total: number | null;
@@ -179,13 +274,23 @@ export interface ScoreResult {
   negatives: Bullet[];
   risks?: RiskItem[];
   summary?: string;
+  buurtVergelijking?: string;
+  improvements?: Improvement[];
+  memo?: DecisionMemo;
   disclaimer: string;
+}
+
+export interface ScoreHistoryPoint {
+  date: string;
+  total: number | null;
 }
 
 export interface FullReport {
   facts: PropertyFacts;
   score: ScoreResult;
   generatedAt: string;
+  /** Scoreverloop over eerdere rapportages (max 30 punten) */
+  history?: ScoreHistoryPoint[];
 }
 
 export interface SuggestItem {

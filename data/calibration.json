@@ -1,0 +1,316 @@
+{
+  "generatedAt": "2026-09-05T13:11:20.538Z",
+  "avg": 66,
+  "p10": 59,
+  "p50": 65,
+  "p90": 72,
+  "pillars": {
+    "woning": {
+      "p10": 52,
+      "p50": 68,
+      "p90": 76,
+      "n": 55
+    },
+    "veiligheid": {
+      "p10": 20,
+      "p50": 48,
+      "p90": 82,
+      "n": 55
+    },
+    "milieu": {
+      "p10": 52,
+      "p50": 67,
+      "p90": 80,
+      "n": 55
+    },
+    "klimaat": {
+      "p10": 79,
+      "p50": 87,
+      "p90": 89,
+      "n": 55
+    },
+    "voorzieningen": {
+      "p10": 45,
+      "p50": 55,
+      "p90": 90,
+      "n": 55
+    }
+  },
+  "rows": [
+    {
+      "address": "Dam 1, 1012JS Amsterdam",
+      "score": 59,
+      "ok": true
+    },
+    {
+      "address": "Prinsengracht 263, 1016GV Amsterdam",
+      "score": 60,
+      "ok": true
+    },
+    {
+      "address": "Museumplein 6, 1071DJ Amsterdam",
+      "score": 66,
+      "ok": true
+    },
+    {
+      "address": "Coolsingel 40, 3011AD Rotterdam",
+      "score": 64,
+      "ok": true
+    },
+    {
+      "address": "Witte de Withstraat 50, 3012BR Rotterdam",
+      "score": 57,
+      "ok": true
+    },
+    {
+      "address": "Lange Voorhout 74, 2514EH 's-Gravenhage",
+      "score": 59,
+      "ok": true
+    },
+    {
+      "address": "Domplein 21, 3512JE Utrecht",
+      "score": 61,
+      "ok": true
+    },
+    {
+      "address": "Neude 11, 3512AE Utrecht",
+      "score": 62,
+      "ok": true
+    },
+    {
+      "address": "Grote Markt 1, 9712HN Groningen",
+      "score": 64,
+      "ok": true
+    },
+    {
+      "address": "Vrijthof 15, 6211LD Maastricht",
+      "score": 61,
+      "ok": true
+    },
+    {
+      "address": "Grote Markt 17, 2011RC Haarlem",
+      "score": 58,
+      "ok": true
+    },
+    {
+      "address": "Parade 18, 5211KL 's-Hertogenbosch",
+      "score": 61,
+      "ok": true
+    },
+    {
+      "address": "Havermarkt 1, 4811WG Breda",
+      "score": 59,
+      "ok": true
+    },
+    {
+      "address": "Stadhuisplein 10, 5611EM Eindhoven",
+      "score": 65,
+      "ok": true
+    },
+    {
+      "address": "Korenmarkt 1, 6811GV Arnhem",
+      "score": 61,
+      "ok": true
+    },
+    {
+      "address": "Grote Markt 9A, 8011LV Zwolle",
+      "score": 64,
+      "ok": true
+    },
+    {
+      "address": "Grote Markt 4A-1, 6511KA Nijmegen",
+      "score": 58,
+      "ok": true
+    },
+    {
+      "address": "Brink 1, 7411BR Deventer",
+      "score": 62,
+      "ok": true
+    },
+    {
+      "address": "Markt 37A, 2611GR Delft",
+      "score": 65,
+      "ok": true
+    },
+    {
+      "address": "Markt 1, 4341EP Arnemuiden",
+      "score": 72,
+      "ok": true
+    },
+    {
+      "address": "Rooseveltlaan 100, 1078NN Amsterdam",
+      "score": 71,
+      "ok": true
+    },
+    {
+      "address": "Osdorpplein 53A, Amsterdam",
+      "score": 63,
+      "ok": true
+    },
+    {
+      "address": "Molenlaan 50, 3055EM Rotterdam",
+      "score": 72,
+      "ok": true
+    },
+    {
+      "address": "Slinge 250, 3085EX Rotterdam",
+      "score": 65,
+      "ok": true
+    },
+    {
+      "address": "Loevenhoutsedijk 1000T, Utrecht",
+      "score": 74,
+      "ok": true
+    },
+    {
+      "address": "Amsterdamsestraatweg 500, 3553EM Utrecht",
+      "score": 67,
+      "ok": true
+    },
+    {
+      "address": "Laan van Meerdervoort 800, 2564AR 's-Gravenhage",
+      "score": 72,
+      "ok": true
+    },
+    {
+      "address": "Loosduinsekade 100, 2571BS 's-Gravenhage",
+      "score": 69,
+      "ok": true
+    },
+    {
+      "address": "Tongelresestraat 2-N01, Eindhoven",
+      "score": 63,
+      "ok": true
+    },
+    {
+      "address": "Twentepoort West 10v-10, 7609RD Almelo",
+      "score": 58,
+      "ok": true
+    },
+    {
+      "address": "Paterswoldseweg 200, 9727BR Groningen",
+      "score": 69,
+      "ok": true
+    },
+    {
+      "address": "Brusselstraat 20, 1334CJ Almere",
+      "score": 67,
+      "ok": true
+    },
+    {
+      "address": "Schalkwijkerstraat 13A-RD, 2033JB Haarlem",
+      "score": 67,
+      "ok": true
+    },
+    {
+      "address": "Kanaalstraat 100, 1975BH IJmuiden",
+      "score": 67,
+      "ok": true
+    },
+    {
+      "address": "Vondellaan 20, 3818WP Amersfoort",
+      "score": 71,
+      "ok": true
+    },
+    {
+      "address": "Hoofdstraat 50, 7311KD Apeldoorn",
+      "score": 67,
+      "ok": true
+    },
+    {
+      "address": "Stationsweg 10A-1, 1404AN Bussum",
+      "score": 62,
+      "ok": true
+    },
+    {
+      "address": "Dorpsstraat 20, 1861KW Bergen (NH)",
+      "score": 67,
+      "ok": true
+    },
+    {
+      "address": "Grote Kerkstraat 10, 1135BD Edam",
+      "score": 73,
+      "ok": true
+    },
+    {
+      "address": "Boulevard Barnaart 30e-20, 2041JA Zandvoort",
+      "score": 63,
+      "ok": true
+    },
+    {
+      "address": "Dorpsstraat 40, 1901EL Castricum",
+      "score": 68,
+      "ok": true
+    },
+    {
+      "address": "Hoofdstraat 34-TR, Emmen",
+      "score": 60,
+      "ok": true
+    },
+    {
+      "address": "Markt 10-10, 5461JJ Veghel",
+      "score": 72,
+      "ok": true
+    },
+    {
+      "address": "Dorpsstraat 15, 6871AA Renkum",
+      "score": 71,
+      "ok": true
+    },
+    {
+      "address": "Hoofdstraat 59a, Sassenheim",
+      "score": 67,
+      "ok": true
+    },
+    {
+      "address": "Rijksstraatweg 100, 9752BK Haren Gn",
+      "score": 72,
+      "ok": true
+    },
+    {
+      "address": "Dorpsstraat 10, 7391DD Twello",
+      "score": 73,
+      "ok": true
+    },
+    {
+      "address": "Hoofdstraat 60, 7901JS Hoogeveen",
+      "score": 65,
+      "ok": true
+    },
+    {
+      "address": "Kerkbuurt 40, 3361BJ Sliedrecht",
+      "score": 65,
+      "ok": true
+    },
+    {
+      "address": "Voorstraat 1A, 8801KZ Franeker",
+      "score": 69,
+      "ok": true
+    },
+    {
+      "address": "1e Havenstraat 5, 1976CD IJmuiden",
+      "score": 58,
+      "ok": true
+    },
+    {
+      "address": "Middenweg 100, 1702HC Heerhugowaard",
+      "score": 73,
+      "ok": true
+    },
+    {
+      "address": "Zuiderzeestraatweg 150, 8096CE Oldebroek",
+      "score": 72,
+      "ok": true
+    },
+    {
+      "address": "Dorpsstraat 50, 2712AM Zoetermeer",
+      "score": 75,
+      "ok": true
+    },
+    {
+      "address": "Julianastraat 20A-1, 6285AJ Epen",
+      "score": 72,
+      "ok": true
+    }
+  ]
+}

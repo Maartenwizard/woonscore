@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { checkApiKey } from "@/lib/auth";
-import { reportFromQuery } from "@/lib/service/report";
+import { BULK_MAX, bulkScore, parseBulkAddresses } from "@/lib/service/bulk";
 import type { ScoreProfile } from "@/lib/types";
 
 export async function POST(req: NextRequest) {
@@ -16,37 +16,17 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const addresses = (body.addresses ?? []).map((a) => a.trim()).filter(Boolean);
+  const addresses = parseBulkAddresses(body.addresses);
   if (!addresses.length) {
     return NextResponse.json({ error: "addresses required" }, { status: 400 });
   }
-  if (addresses.length > 20) {
-    return NextResponse.json({ error: "Max 20 addresses" }, { status: 400 });
+  const max = auth.bulkMax ?? BULK_MAX;
+  if (addresses.length > max) {
+    return NextResponse.json({ error: `Max ${max} addresses` }, { status: 400 });
   }
 
   const profile = body.profile ?? "commercial";
-  const results = [];
-
-  // Serial to respect WOZ and upstream rate limits
-  for (const address of addresses) {
-    try {
-      const report = await reportFromQuery({ address, profile });
-      results.push({
-        address,
-        ok: true,
-        total: report.score.total,
-        weergavenaam: report.facts.address.weergavenaam,
-        nummeraanduidingId: report.facts.address.nummeraanduidingId,
-        risks: report.score.risks,
-      });
-    } catch (e) {
-      results.push({
-        address,
-        ok: false,
-        error: e instanceof Error ? e.message : "failed",
-      });
-    }
-  }
+  const results = await bulkScore(addresses, profile);
 
   return NextResponse.json({ version: "v1", profile, results });
 }

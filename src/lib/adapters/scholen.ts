@@ -18,26 +18,33 @@ export async function fetchSchools(address: ResolvedAddress): Promise<SchoolsFac
   const dLon = 0.012 / Math.cos((address.lat * Math.PI) / 180);
   const rows = db
     .prepare(
-      `SELECT naam, lat, lon FROM scholen
+      `SELECT naam, lat, lon, type, denominatie FROM scholen
        WHERE lat BETWEEN ? AND ? AND lon BETWEEN ? AND ?`,
     )
     .all(address.lat - dLat, address.lat + dLat, address.lon - dLon, address.lon + dLon) as Array<{
     naam: string;
     lat: number;
     lon: number;
+    type: string | null;
+    denominatie: string | null;
   }>;
 
-  const scholen = rows
+  const binnenBereik = rows
     .map((r) => ({
       naam: r.naam,
       afstandM: Math.round(haversineM(address.lat, address.lon, r.lat, r.lon)),
+      type: r.type === "bo" ? ("bo" as const) : r.type === "vo" ? ("vo" as const) : undefined,
+      denominatie: r.denominatie || undefined,
     }))
     .filter((s) => s.afstandM <= 1000)
-    .sort((a, b) => a.afstandM - b.afstandM)
-    .slice(0, 15);
+    .sort((a, b) => a.afstandM - b.afstandM);
+
+  const scholen = binnenBereik.slice(0, 15);
 
   const facts: SchoolsFacts = {
-    binnen1km: scholen.length,
+    binnen1km: binnenBereik.length,
+    basisscholenBinnen1km: binnenBereik.filter((s) => s.type === "bo").length,
+    middelbareScholenBinnen1km: binnenBereik.filter((s) => s.type === "vo").length,
     scholen,
   };
   cacheSet(cacheKey, "scholen", facts, TTL.scholen);

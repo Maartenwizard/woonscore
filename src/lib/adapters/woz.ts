@@ -15,10 +15,22 @@ function enqueueWoz<T>(fn: () => Promise<T>): Promise<T> {
   return next;
 }
 
+/** Negatieve cache: voorkom dat elk rapport opnieuw op het loket wacht als het plat ligt. */
+const UNAVAILABLE_KEY = "woz:unavailable";
+const UNAVAILABLE_TTL_S = 6 * 60 * 60;
+
+interface UnavailableMarker {
+  unavailable: true;
+}
+
 export async function fetchWoz(address: ResolvedAddress): Promise<WozFacts | null> {
   const cacheKey = `woz:${address.nummeraanduidingId}`;
   const cached = cacheGet<WozFacts>(cacheKey);
   if (cached) return cached;
+
+  if (cacheGet<UnavailableMarker>(UNAVAILABLE_KEY)) {
+    throw new Error("WOZ-waardeloket tijdelijk niet beschikbaar (negatieve cache)");
+  }
 
   return enqueueWoz(async () => {
     // Session cookie (GET — POST returns 405 on current loket)
@@ -57,7 +69,8 @@ export async function fetchWoz(address: ResolvedAddress): Promise<WozFacts | nul
     const text = await res.text();
     if (!res.ok) throw new Error(`WOZ-waardeloket ${res.status}`);
     if (text.trimStart().startsWith("<!DOCTYPE") || text.trimStart().startsWith("<html")) {
-      // SPA shell — unofficial JSON endpoint currently unavailable
+      // SPA-shell — onofficieel JSON-endpoint ligt eruit; onthoud dat even
+      cacheSet(UNAVAILABLE_KEY, "woz", { unavailable: true }, UNAVAILABLE_TTL_S);
       throw new Error("WOZ-waardeloket JSON endpoint unavailable");
     }
 
@@ -89,7 +102,7 @@ export async function fetchWoz(address: ResolvedAddress): Promise<WozFacts | nul
   });
 }
 
-function computeTrend(historie: WozPoint[]): number | undefined {
+export function computeTrend(historie: WozPoint[]): number | undefined {
   if (historie.length < 2) return undefined;
   const first = historie[0];
   const last = historie[historie.length - 1];

@@ -39,7 +39,10 @@ export function getDb(): Database.Database {
       postcode TEXT,
       plaats TEXT,
       lat REAL NOT NULL,
-      lon REAL NOT NULL
+      lon REAL NOT NULL,
+      vestigingscode TEXT,
+      type TEXT,
+      denominatie TEXT
     );
     CREATE INDEX IF NOT EXISTS idx_scholen_latlon ON scholen(lat, lon);
 
@@ -55,6 +58,72 @@ export function getDb(): Database.Database {
       window_start INTEGER NOT NULL,
       count INTEGER NOT NULL
     );
+
+    CREATE TABLE IF NOT EXISTS report_history (
+      nummeraanduiding_id TEXT NOT NULL,
+      date TEXT NOT NULL,
+      total INTEGER,
+      created_at INTEGER NOT NULL,
+      PRIMARY KEY (nummeraanduiding_id, date)
+    );
+
+    CREATE TABLE IF NOT EXISTS users (
+      clerk_id TEXT PRIMARY KEY,
+      stripe_customer_id TEXT,
+      plan TEXT NOT NULL DEFAULT 'free',
+      extra_credits INTEGER NOT NULL DEFAULT 0,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS user_api_keys (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clerk_id TEXT NOT NULL,
+      prefix TEXT NOT NULL,
+      hash TEXT NOT NULL UNIQUE,
+      name TEXT,
+      created_at INTEGER NOT NULL,
+      last_used_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_user_keys_clerk ON user_api_keys(clerk_id);
+
+    CREATE TABLE IF NOT EXISTS usage_events (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clerk_id TEXT NOT NULL,
+      kind TEXT NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_usage_clerk_time ON usage_events(clerk_id, created_at);
+
+    CREATE TABLE IF NOT EXISTS service_orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clerk_id TEXT NOT NULL,
+      dienst_id TEXT NOT NULL,
+      dienst_naam TEXT NOT NULL,
+      adres TEXT NOT NULL,
+      nummeraanduiding_id TEXT,
+      amount_cents INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      stripe_session_id TEXT,
+      created_at INTEGER NOT NULL,
+      paid_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_orders_clerk ON service_orders(clerk_id, created_at);
   `);
+  migrateScholen(db);
   return db;
+}
+
+/** Bestaande databases van vóór de DUO-import missen deze kolommen. */
+function migrateScholen(db: Database.Database) {
+  const cols = new Set(
+    (db.prepare(`PRAGMA table_info(scholen)`).all() as Array<{ name: string }>).map(
+      (c) => c.name,
+    ),
+  );
+  if (!cols.has("vestigingscode")) db.exec(`ALTER TABLE scholen ADD COLUMN vestigingscode TEXT`);
+  if (!cols.has("type")) db.exec(`ALTER TABLE scholen ADD COLUMN type TEXT`);
+  if (!cols.has("denominatie")) db.exec(`ALTER TABLE scholen ADD COLUMN denominatie TEXT`);
+  db.exec(
+    `CREATE UNIQUE INDEX IF NOT EXISTS idx_scholen_vestigingscode ON scholen(vestigingscode)`,
+  );
 }

@@ -15,7 +15,7 @@ export async function fetchCrime(address: ResolvedAddress): Promise<CrimeFacts |
     .map((c) => String(c).replace(/\s/g, ""));
 
   for (const code of codes) {
-    const cacheKey = `crime:${code}`;
+    const cacheKey = `crime:v2:${code}`;
     const cached = cacheGet<CrimeFacts>(cacheKey);
     if (cached) return cached;
 
@@ -53,11 +53,44 @@ async function queryCrime(code: string): Promise<CrimeFacts | null> {
   const misdrijvenTotaal = num(totalRow.GeregistreerdeMisdrijven_1);
   const peiljaar = str(totalRow.Perioden)?.slice(0, 4) ?? "2024";
 
+  const types = await queryCrimeTypes(code, peiljaar);
+
   return {
     misdrijvenTotaal,
     landelijkGemiddeldePer1000: LAND_AVG_PER_1000,
     peiljaar,
+    ...types,
   };
+}
+
+async function queryCrimeTypes(
+  code: string,
+  peiljaar: string,
+): Promise<Pick<CrimeFacts, "inbraakWoning" | "fietsendiefstal" | "mishandeling">> {
+  const filter = encodeURIComponent(
+    `startswith(WijkenEnBuurten,'${code}') and startswith(Perioden,'${peiljaar}') and (startswith(SoortMisdrijf,'1.1.1') or startswith(SoortMisdrijf,'1.2.3') or startswith(SoortMisdrijf,'1.4.5'))`,
+  );
+  try {
+    const res = await fetchWithTimeout(
+      `${BASE}/TypedDataSet?$filter=${filter}&$top=20`,
+      {},
+      10000,
+    );
+    if (!res.ok) return {};
+    const json = (await res.json()) as { value?: Array<Record<string, unknown>> };
+    const out: Pick<CrimeFacts, "inbraakWoning" | "fietsendiefstal" | "mishandeling"> = {};
+    for (const r of json.value ?? []) {
+      const soort = String(r.SoortMisdrijf ?? "");
+      const n = num(r.GeregistreerdeMisdrijven_1);
+      if (n == null) continue;
+      if (soort.startsWith("1.1.1")) out.inbraakWoning = n;
+      else if (soort.startsWith("1.2.3")) out.fietsendiefstal = n;
+      else if (soort.startsWith("1.4.5")) out.mishandeling = n;
+    }
+    return out;
+  } catch {
+    return {};
+  }
 }
 
 export function enrichCrimeWithPopulation(

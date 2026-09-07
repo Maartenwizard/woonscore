@@ -50,12 +50,9 @@ export default function ZakelijkPage() {
     setBulkLoading(true);
     setBulk(null);
     try {
-      const res = await fetch("/api/v1/bulk", {
+      const res = await fetch("/api/bulk", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-API-Key": "demo-key-1",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ addresses, profile: "commercial" }),
       });
       const json = await res.json();
@@ -81,7 +78,12 @@ export default function ZakelijkPage() {
           </h1>
           <p className="max-w-2xl text-[var(--muted)]">
             Voor makelaars, beleggers en projectontwikkelaars: één adres, alle
-            openbare signalen, risico-checklist en PDF-export.
+            openbare signalen, risico-checklist en PDF-export. API-keys en
+            hogere limieten via{" "}
+            <a href="/prijzen" className="underline">
+              Prijzen
+            </a>
+            .
           </p>
           <div className="max-w-xl pt-2">
             <AddressSearch onSelect={load} />
@@ -95,10 +97,14 @@ export default function ZakelijkPage() {
         {report && !loading && <ReportView report={report} mode="commercial" />}
 
         <section className="space-y-4 rounded-2xl border border-[var(--border)] bg-white/70 p-5 print:hidden">
-          <h2 className="text-lg font-semibold text-[var(--ink)]">Bulk (max 20)</h2>
+          <h2 className="text-lg font-semibold text-[var(--ink)]">Bulk (max 20 op de site)</h2>
           <p className="text-sm text-[var(--muted)]">
-            Plak adressen gescheiden door komma of nieuwe regel. Gebruikt demo
-            API-key.
+            Plak adressen gescheiden door komma of nieuwe regel (max 20 op deze
+            pagina). De API hanteert je planlimiet. Keys aanmaken:{" "}
+            <a href="/account" className="underline">
+              account
+            </a>
+            .
           </p>
           <textarea
             value={csv}
