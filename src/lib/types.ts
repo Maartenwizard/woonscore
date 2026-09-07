@@ -241,6 +241,31 @@ export interface Improvement {
   impact: "high" | "medium" | "low";
 }
 
+export type MemoOordeel = "groen" | "oranje" | "rood";
+
+export interface MemoKostenpost {
+  post: string;
+  bandbreedte: string;
+  toelichting: string;
+}
+
+/**
+ * Deterministisch beslismemo bovenop de score: wat betekent dit adres,
+ * wat vraag je op de bezichtiging en welke stukken vraag je op.
+ */
+export interface DecisionMemo {
+  oordeel: MemoOordeel;
+  oordeelLabel: string;
+  /** De 2-4 feiten die het oordeel dragen */
+  kernpunten: string[];
+  /** Vragen voor bezichtiging of verkopend makelaar */
+  vragen: string[];
+  /** Documenten om op te vragen vóór bod/voorbehoud */
+  documenten: string[];
+  /** Indicatieve kosten-bandbreedtes in euro's */
+  kosten: MemoKostenpost[];
+}
+
 export interface ScoreResult {
   profile: ScoreProfile;
   total: number | null;
@@ -251,6 +276,7 @@ export interface ScoreResult {
   summary?: string;
   buurtVergelijking?: string;
   improvements?: Improvement[];
+  memo?: DecisionMemo;
   disclaimer: string;
 }
 

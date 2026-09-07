@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { afterEach, describe, expect, it } from "vitest";
 import { createKey, generateApiKey, hashApiKey, listKeys } from "./api-keys";
 import { getDb } from "./db";
+import { createOrder, listOrders, markOrderPaid } from "./orders";
 import { CREDIT_PACK_SIZE, PLANS } from "./plans";
 import { applyStripeEvent } from "./stripe-webhooks";
 import { addCredits, consumeCredit, ensureUser, getUser, monthlyUsage, setStripeCustomer } from "./users";
@@ -10,6 +11,7 @@ function wipeUser(clerkId: string) {
   const db = getDb();
   db.prepare(`DELETE FROM user_api_keys WHERE clerk_id = ?`).run(clerkId);
   db.prepare(`DELETE FROM usage_events WHERE clerk_id = ?`).run(clerkId);
+  db.prepare(`DELETE FROM service_orders WHERE clerk_id = ?`).run(clerkId);
   db.prepare(`DELETE FROM users WHERE clerk_id = ?`).run(clerkId);
 }
 
@@ -127,5 +129,41 @@ describe("applyStripeEvent", () => {
     clerkIds.push(clerkId);
     ensureUser(clerkId);
     expect(monthlyUsage(clerkId)).toBe(0);
+  });
+
+  it("zet een dienst-order op betaald via de webhook", () => {
+    const clerkId = `test_${randomBytes(8).toString("hex")}`;
+    clerkIds.push(clerkId);
+    ensureUser(clerkId);
+    const orderId = createOrder({
+      clerkId,
+      dienstId: "funderingsonderzoek",
+      dienstNaam: "Funderingscheck",
+      adres: "Teststraat 1, Teststad",
+      amountCents: 56500,
+    });
+    expect(listOrders(clerkId)[0].status).toBe("pending");
+
+    applyStripeEvent({
+      type: "checkout.session.completed",
+      data: {
+        object: {
+          mode: "payment",
+          client_reference_id: clerkId,
+          metadata: {
+            clerkUserId: clerkId,
+            kind: "dienst",
+            orderId: String(orderId),
+            dienstId: "funderingsonderzoek",
+          },
+        },
+      } as never,
+    });
+
+    const order = listOrders(clerkId)[0];
+    expect(order.status).toBe("paid");
+    expect(order.paid_at).not.toBeNull();
+    // idempotent: nogmaals verwerken verandert niets
+    expect(markOrderPaid(orderId)).toBe(false);
   });
 });

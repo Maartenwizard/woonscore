@@ -93,6 +93,21 @@ export function getDb(): Database.Database {
       created_at INTEGER NOT NULL
     );
     CREATE INDEX IF NOT EXISTS idx_usage_clerk_time ON usage_events(clerk_id, created_at);
+
+    CREATE TABLE IF NOT EXISTS service_orders (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      clerk_id TEXT NOT NULL,
+      dienst_id TEXT NOT NULL,
+      dienst_naam TEXT NOT NULL,
+      adres TEXT NOT NULL,
+      nummeraanduiding_id TEXT,
+      amount_cents INTEGER NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending',
+      stripe_session_id TEXT,
+      created_at INTEGER NOT NULL,
+      paid_at INTEGER
+    );
+    CREATE INDEX IF NOT EXISTS idx_orders_clerk ON service_orders(clerk_id, created_at);
   `);
   migrateScholen(db);
   return db;

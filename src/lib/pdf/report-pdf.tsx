@@ -149,6 +149,62 @@ export function ReportPdf({ report }: { report: FullReport }) {
           </View>
         ) : null}
 
+        {score.memo ? (
+          <View style={styles.section}>
+            <Text style={styles.h2}>Beslismemo</Text>
+            <Text
+              style={{
+                color:
+                  score.memo.oordeel === "rood"
+                    ? RISK_COLORS.red
+                    : score.memo.oordeel === "oranje"
+                      ? RISK_COLORS.amber
+                      : RISK_COLORS.green,
+                marginBottom: 4,
+              }}
+            >
+              {score.memo.oordeelLabel}
+            </Text>
+            {score.memo.kernpunten.map((k) => (
+              <View key={k} style={styles.bullet}>
+                <Text>• </Text>
+                <Text>{k}</Text>
+              </View>
+            ))}
+            {score.memo.kosten.map((k) => (
+              <View key={k.post} style={styles.bullet}>
+                <Text style={styles.muted}>
+                  {k.post}: {k.bandbreedte}
+                </Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {score.memo?.vragen.length ? (
+          <View style={styles.section}>
+            <Text style={styles.h2}>Vragen voor bezichtiging</Text>
+            {score.memo.vragen.map((v, i) => (
+              <View key={v} style={styles.bullet}>
+                <Text>{i + 1}. </Text>
+                <Text>{v}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
+        {score.memo?.documenten.length ? (
+          <View style={styles.section}>
+            <Text style={styles.h2}>Documenten om op te vragen</Text>
+            {score.memo.documenten.map((d) => (
+              <View key={d} style={styles.bullet}>
+                <Text>☐ </Text>
+                <Text>{d}</Text>
+              </View>
+            ))}
+          </View>
+        ) : null}
+
         <View style={styles.section}>
           <Text style={styles.h2}>Kerngegevens</Text>
           {factRows.map(([label, value]) => (

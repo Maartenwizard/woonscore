@@ -20,6 +20,7 @@ import { loadReportHistory, saveReport, saveReportHistory } from "@/lib/cache";
 import { maybeBuurtVergelijking, maybeSummarize } from "@/lib/llm";
 import { computeScore } from "@/lib/score/engine";
 import { buildImprovements } from "@/lib/score/improvements";
+import { buildMemo } from "@/lib/score/memo";
 import type {
   FullReport,
   PropertyFacts,
@@ -113,7 +114,11 @@ export async function buildReport(
   ]);
   if (narrative) score = { ...score, summary: narrative };
   if (buurt) score = { ...score, buurtVergelijking: buurt };
-  score = { ...score, improvements: buildImprovements(facts) };
+  score = {
+    ...score,
+    improvements: buildImprovements(facts),
+    memo: buildMemo(facts, score),
+  };
 
   saveReportHistory(address.nummeraanduidingId, score.total);
   const history = loadReportHistory(address.nummeraanduidingId);

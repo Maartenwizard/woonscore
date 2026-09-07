@@ -1,4 +1,5 @@
 import type Stripe from "stripe";
+import { markOrderPaid } from "./orders";
 import { CREDIT_PACK_SIZE } from "./plans";
 import { addCredits, getUserByStripeCustomer, setUserPlan } from "./users";
 
@@ -21,6 +22,11 @@ export function applyStripeEvent(event: Pick<Stripe.Event, "type" | "data">) {
     const session = event.data.object as Stripe.Checkout.Session;
     const clerkId = clerkIdFromSession(session);
     if (!clerkId) return;
+    if (session.metadata?.kind === "dienst") {
+      const orderId = Number(session.metadata.orderId);
+      if (orderId) markOrderPaid(orderId);
+      return;
+    }
     if (session.metadata?.kind === "credits") {
       addCredits(clerkId, Number(session.metadata.credits) || CREDIT_PACK_SIZE);
       return;

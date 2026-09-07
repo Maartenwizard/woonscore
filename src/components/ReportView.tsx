@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { recommendDiensten } from "@/lib/diensten";
 import type { FullReport } from "@/lib/types";
+import { DecisionMemoView } from "./DecisionMemo";
 import { Disclaimer } from "./Nav";
 import { PosNegList } from "./PosNegList";
 import { PropertyMap } from "./PropertyMap";
@@ -11,6 +13,7 @@ import { ReportChat } from "./ReportChat";
 import { RiskChecklist } from "./RiskChecklist";
 import { ScoreBars } from "./ScoreBars";
 import { ScoreRing } from "./ScoreRing";
+import { ServiceOffers } from "./ServiceOffers";
 
 export function ReportView({
   report,
@@ -39,6 +42,7 @@ export function ReportView({
   ].filter(Boolean) as string[];
 
   const history = (report.history ?? []).filter((h) => h.total != null);
+  const diensten = recommendDiensten(facts);
 
   return (
     <div className="space-y-10 print:space-y-6">
@@ -100,12 +104,20 @@ export function ReportView({
         </div>
       </section>
 
+      {score.memo && <DecisionMemoView memo={score.memo} />}
+
       {mode === "commercial" && score.risks && (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold text-[var(--ink)]">Risico-checklist</h2>
           <RiskChecklist risks={score.risks} />
         </section>
       )}
+
+      <ServiceOffers
+        diensten={diensten}
+        adres={a.weergavenaam}
+        nummeraanduidingId={a.nummeraanduidingId}
+      />
 
       <PropertyMap lat={a.lat} lon={a.lon} label={a.weergavenaam} />
 

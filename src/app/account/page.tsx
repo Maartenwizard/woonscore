@@ -3,7 +3,15 @@ import { redirect } from "next/navigation";
 import { AccountDashboard } from "@/components/AccountDashboard";
 import { Disclaimer, Nav } from "@/components/Nav";
 import { listKeys } from "@/lib/api-keys";
+import { formatPrijs } from "@/lib/diensten";
+import { listOrders } from "@/lib/orders";
 import { ensureUser, monthlyUsage, planLimits } from "@/lib/users";
+
+const ORDER_STATUS: Record<string, string> = {
+  pending: "Wacht op betaling",
+  paid: "Betaald — partner neemt contact op",
+  canceled: "Geannuleerd",
+};
 
 export const dynamic = "force-dynamic";
 
@@ -18,11 +26,14 @@ export default async function AccountPage({
   const user = ensureUser(userId);
   const me = await currentUser();
   const limits = planLimits(user.plan);
+  const orders = listOrders(userId);
   const params = await searchParams;
   const notice =
     params.checkout === "success"
       ? "Betaling ontvangen. Je plan of credits worden zo bijgewerkt."
-      : null;
+      : params.checkout === "dienst"
+        ? "Aanvraag ontvangen. Zodra de betaling is verwerkt, plant de partner de afspraak met je in."
+        : null;
 
   return (
     <div className="flex min-h-full flex-col">
@@ -52,6 +63,42 @@ export default async function AccountPage({
             name: k.name,
           }))}
         />
+
+        {orders.length > 0 && (
+          <section className="space-y-3 rounded-2xl border border-[var(--border)] bg-white p-5">
+            <h2 className="text-lg font-semibold">Aangevraagde checks</h2>
+            <ul className="divide-y divide-[var(--border)]">
+              {orders.map((o) => (
+                <li key={o.id} className="py-3 text-sm">
+                  <div className="flex items-baseline justify-between gap-3">
+                    <span className="font-medium text-[var(--ink)]">
+                      {o.dienst_naam} · {formatPrijs(o.amount_cents)}
+                    </span>
+                    <span
+                      className={
+                        o.status === "paid"
+                          ? "text-emerald-700"
+                          : o.status === "pending"
+                            ? "text-amber-700"
+                            : "text-[var(--muted)]"
+                      }
+                    >
+                      {ORDER_STATUS[o.status] ?? o.status}
+                    </span>
+                  </div>
+                  <p className="mt-0.5 text-[var(--muted)]">
+                    {o.adres} ·{" "}
+                    {new Date(o.created_at).toLocaleDateString("nl-NL", {
+                      day: "numeric",
+                      month: "long",
+                      year: "numeric",
+                    })}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
       </main>
       <footer className="mx-auto w-full max-w-3xl px-4 pb-8">
         <Disclaimer />

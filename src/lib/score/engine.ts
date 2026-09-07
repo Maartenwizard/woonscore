@@ -515,7 +515,7 @@ function uniqBullets(items: Bullet[]): Bullet[] {
   });
 }
 
-function buildRisks(facts: PropertyFacts): RiskItem[] {
+export function buildRisks(facts: PropertyFacts): RiskItem[] {
   const risks: RiskItem[] = [];
 
   const flood = facts.climate?.overstromingsdiepteM;
